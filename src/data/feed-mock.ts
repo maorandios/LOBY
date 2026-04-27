@@ -1,6 +1,14 @@
-import type { FeedPost } from '@/types/feed'
+import type { FeedPost, PostComment } from '@/types/feed'
 
 export const BUILDING_NAME = 'קדושי סלוניקי 27, ירושלים'
+
+const c = (
+  id: string,
+  author: string,
+  apartment: string,
+  text: string,
+  relativeTime: string
+): PostComment => ({ id, author, apartment, text, relativeTime })
 
 export const MOCK_POSTS: FeedPost[] = [
   {
@@ -17,6 +25,10 @@ export const MOCK_POSTS: FeedPost[] = [
     hasImage: true,
     comments: 4,
     views: 38,
+    recentComments: [
+      c('c1', 'יוסי', '4', 'גם אצלי השורה הזאת כבויה מדי פעם.', 'לפני 8 דקות'),
+      c('c2', 'מזכירות', '—', 'פותחים קריאה למתחזק — נעדכן.', 'לפני 6 דקות'),
+    ],
   },
   {
     id: 'p2',
@@ -30,6 +42,10 @@ export const MOCK_POSTS: FeedPost[] = [
     bodyPreview: 'הצעת צבעים מצורפת בנוסף לפוסט.',
     comments: 9,
     views: 112,
+    recentComments: [
+      c('c3', 'נועה', '7', 'מעדיפה את גוון הקרם.', 'לפני 40 דקות'),
+      c('c4', 'אבי', '2', 'אפור בהיר נראה נקי יותר לדעתי.', 'לפני 25 דקות'),
+    ],
     poll: {
       isClosed: false,
       initialVoteOptionId: null,
@@ -54,6 +70,7 @@ export const MOCK_POSTS: FeedPost[] = [
       'מזמינים שכנים להצטרף — נדאג לעמדת מים ולפח אשפה ליד הכניסה.',
     comments: 2,
     views: 54,
+    recentComments: [c('c5', 'מיכל', '9', 'מגיעים עם סלט!', 'אתמול')],
   },
   {
     id: 'p4',

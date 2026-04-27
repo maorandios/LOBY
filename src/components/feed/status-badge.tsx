@@ -1,27 +1,24 @@
-import { Badge } from '@/components/ui/badge'
 import type { PostStatusHe } from '@/types/feed'
 import { cn } from '@/lib/utils'
 
-const statusClass: Record<PostStatusHe, string> = {
-  פתוח: 'border-neutral-200 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100',
+const statusChipClass: Record<PostStatusHe, string> = {
+  פתוח: 'bg-neutral-500/12 text-neutral-800 dark:bg-neutral-400/15 dark:text-neutral-100',
   בטיפול:
-    'border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100',
-  נסגר:
-    'border-neutral-200 bg-neutral-100 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200',
+    'bg-amber-500/15 text-amber-950 dark:bg-amber-400/18 dark:text-amber-50',
+  נסגר: 'bg-neutral-500/10 text-neutral-600 dark:bg-neutral-500/15 dark:text-neutral-300',
   הוחלט:
-    'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/35 dark:text-emerald-100',
+    'bg-emerald-500/15 text-emerald-900 dark:bg-emerald-400/18 dark:text-emerald-50',
 }
 
 export function StatusBadge({ status }: { status: PostStatusHe }) {
   return (
-    <Badge
-      variant="outline"
+    <span
       className={cn(
-        'h-6 rounded-full px-2.5 text-[0.7rem] font-medium',
-        statusClass[status]
+        'inline-flex items-center rounded-full px-3 py-1 text-[0.7rem] font-semibold tracking-tight',
+        statusChipClass[status]
       )}
     >
       {status}
-    </Badge>
+    </span>
   )
 }

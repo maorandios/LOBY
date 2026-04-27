@@ -4,6 +4,14 @@ export type PostStatusHe = 'פתוח' | 'בטיפול' | 'נסגר' | 'הוחל�
 
 export type FeedFilterId = 'הכל' | 'דיווחים' | 'הצבעות' | 'עדכונים' | 'בקשות'
 
+export interface PostComment {
+  id: string
+  author: string
+  apartment: string
+  text: string
+  relativeTime: string
+}
+
 export interface PollOption {
   id: string
   label: string
@@ -33,6 +41,8 @@ export interface FeedPostBase {
   hasImage?: boolean
   comments: number
   views?: number
+  /** Shown on card; user can add more inline */
+  recentComments?: PostComment[]
 }
 
 export interface FeedPostStandard extends FeedPostBase {
