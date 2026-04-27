@@ -4,7 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/use-auth'
 import { AuthScreenShell } from '@/components/auth/auth-screen-shell'
 import { Button } from '@/components/ui/button'
-import { clearAuthBypassSignedOut } from '@/lib/auth-bypass'
+import {
+  canUseEmergencyBypassHost,
+  clearAuthBypassSignedOut,
+  enableEmergencyAuthBypass,
+} from '@/lib/auth-bypass'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 
 type Step = 'form' | 'sent'
@@ -19,12 +23,24 @@ const calloutErrorClass =
 const devBypassClass =
   'rounded-xl border border-[#0369a1] bg-[#e0f2fe] px-3 py-3 text-right text-sm text-[#0c4a6e] shadow-sm [html:not(:lang(he))]:text-left'
 
+function isRateLimitErrorMessage(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('rate limit') ||
+    m.includes('too many') ||
+    m.includes('over_email_send_rate_limit') ||
+    m.includes('email rate limit') ||
+    m.includes('429') ||
+    m.includes('exceeded')
+  )
+}
+
 function hebrewAuthError(message: string): string {
   const m = message.toLowerCase()
   if (m.includes('invalid login credentials')) {
     return 'ההתחברות נכשלה. נסו שוב.'
   }
-  if (m.includes('rate limit') || m.includes('too many')) {
+  if (isRateLimitErrorMessage(m)) {
     return 'יותר מדי ניסיונות. המתינו רגע ונסו שוב.'
   }
   if (m.includes('network') || m.includes('fetch')) {
@@ -41,6 +57,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [rateLimited, setRateLimited] = useState(false)
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -54,6 +71,7 @@ export function LoginPage() {
 
     setLoading(true)
     try {
+      setRateLimited(false)
       const origin = window.location.origin
       const { error: signError } = await supabase.auth.signInWithOtp({
         email: trimmed,
@@ -62,6 +80,9 @@ export function LoginPage() {
         },
       })
       if (signError) {
+        if (isRateLimitErrorMessage(signError.message)) {
+          setRateLimited(true)
+        }
         setError(hebrewAuthError(signError.message))
         return
       }
@@ -91,8 +112,20 @@ export function LoginPage() {
         <div className={devBypassClass} role="status">
           <p className="mb-2 font-semibold">דילוג על Supabase Auth</p>
           <p className="mb-3 text-xs leading-relaxed">
-            מוגדר <span className="font-mono" dir="ltr">VITE_AUTH_BYPASS=true</span> בקובץ סביבה או ב־Vercel. לא
-            נשלחים קישורי מייל ולא נצרכת מכסה. להסיר בייצור אמיתי.
+            {import.meta.env.VITE_AUTH_BYPASS === 'true' ? (
+              <>
+                מוגדר <span className="font-mono" dir="ltr">VITE_AUTH_BYPASS=true</span> בבנייה. לא נשלחים מיילים.
+                להסיר בייצור אמיתי.
+              </>
+            ) : (
+              <>
+                מצב חירום בדפדפן (localhost / <span dir="ltr">*.vercel.app</span> בלבד). לא נשלחים מיילים. לבטל: פתחו
+                קונסולה והריצו{' '}
+                <span className="font-mono text-[0.65rem]" dir="ltr">
+                  localStorage.removeItem(&apos;loby:emergency_auth_bypass&apos;); location.reload()
+                </span>
+              </>
+            )}
           </p>
           <Button
             type="button"
@@ -192,6 +225,26 @@ export function LoginPage() {
           <p className={calloutErrorClass} role="alert">
             {error}
           </p>
+        ) : null}
+
+        {rateLimited && canUseEmergencyBypassHost() ? (
+          <div className={devBypassClass} role="status">
+            <p className="mb-2 font-semibold">מגבלת שליחת מייל ב־Supabase</p>
+            <p className="mb-3 text-xs leading-relaxed">
+              אפשר להמשיך לפתח בלי קישור מייל באתר זה בלבד: לחיצה תטעין מחדש עם מצב בדיקה (ללא Supabase Auth).
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full touch-manipulation border-[#0369a1] bg-white text-base text-[#0c4a6e] hover:bg-[#e0f2fe]"
+              onClick={() => {
+                enableEmergencyAuthBypass()
+                window.location.reload()
+              }}
+            >
+              כניסה במצב בדיקה (ללא מייל)
+            </Button>
+          </div>
         ) : null}
 
         <Button

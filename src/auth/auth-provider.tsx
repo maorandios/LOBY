@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (import.meta.env.PROD && bypass) {
       console.warn(
-        '[LOBY] VITE_AUTH_BYPASS=true — auth is disabled. Remove for real users / production.'
+        '[LOBY] Auth bypass is ON (VITE_AUTH_BYPASS or emergency localStorage on *.vercel.app / localhost). Disable for real users.'
       )
     }
   }, [bypass])
