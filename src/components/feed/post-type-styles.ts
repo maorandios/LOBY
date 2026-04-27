@@ -1,10 +1,31 @@
+import {
+  AlertTriangle,
+  BarChart2,
+  Handshake,
+  Megaphone,
+  type LucideIcon,
+} from 'lucide-react'
+
 import type { PostTypeHe } from '@/types/feed'
 import { cn } from '@/lib/utils'
+
+export const postTypeLucideIcon: Record<PostTypeHe, LucideIcon> = {
+  דיווח: AlertTriangle,
+  עדכון: Megaphone,
+  הצבעה: BarChart2,
+  בקשה: Handshake,
+}
 
 export function cardAccentByType(_type: PostTypeHe) {
   return cn(
     'rounded-3xl bg-card shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.45)]'
   )
+}
+
+/** Label shown on the type chip (poll type displays as «סקר»). */
+export function postTypeChipLabel(type: PostTypeHe): string {
+  if (type === 'הצבעה') return 'סקר'
+  return type
 }
 
 export function typeBadgeClass(type: PostTypeHe) {

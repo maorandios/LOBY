@@ -1,16 +1,21 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Clock, Heart, MessageCircle } from 'lucide-react'
+import { CheckCircle2, Heart, MessageCircle, Vote } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PollBlock } from '@/components/feed/poll-block'
-import { cardAccentByType, typeBadgeClass } from '@/components/feed/post-type-styles'
+import {
+  cardAccentByType,
+  postTypeChipLabel,
+  postTypeLucideIcon,
+  typeBadgeClass,
+} from '@/components/feed/post-type-styles'
 import { StatusBadge } from '@/components/feed/status-badge'
 import { cn } from '@/lib/utils'
 import { isPollPost, type FeedPost } from '@/types/feed'
 
 const CHIP =
-  'inline-flex max-w-full items-center gap-1 rounded-full px-3 py-1 text-[0.7rem] font-semibold tracking-tight'
+  'inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1 text-[0.7rem] font-semibold tracking-tight'
 
 type Props = {
   post: FeedPost
@@ -25,6 +30,26 @@ export function PostCard({ post }: Props) {
     navigate(`/post/${post.id}`)
   }
 
+  const TypeIcon = postTypeLucideIcon[post.type]
+
+  const residentMeta = (
+    <>
+      <span className="font-semibold text-foreground">{post.author}</span>
+      <span aria-hidden className="text-muted-foreground/80">
+        {' '}
+        ·{' '}
+      </span>
+      <span className="text-muted-foreground">דירה {post.apartment}</span>
+      <span aria-hidden className="text-muted-foreground/80">
+        {' '}
+        ·{' '}
+      </span>
+      <span className="tabular-nums text-muted-foreground">
+        {post.relativeTime}
+      </span>
+    </>
+  )
+
   return (
     <article
       className={cn(
@@ -34,14 +59,28 @@ export function PostCard({ post }: Props) {
       )}
       onClick={goToPost}
     >
-      {/* RTL: second flex child aligns to physical left */}
-      <div className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-2">
+      {/* RTL: first child → physical right; second → physical left */}
+      <div className="flex w-full items-start justify-between gap-3">
+        <p className="min-w-0 flex-1 text-start text-[0.8rem] leading-snug text-foreground">
+          {residentMeta}
+        </p>
+        <span
+          className={cn(
+            CHIP,
+            'shrink-0 text-foreground',
+            typeBadgeClass(post.type)
+          )}
+        >
+          <TypeIcon className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+          {postTypeChipLabel(post.type)}
+        </span>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <h2 className="text-[1.06rem] leading-snug font-semibold tracking-tight text-foreground">
+          {post.title}
+        </h2>
         <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={cn(CHIP, 'text-foreground', typeBadgeClass(post.type))}
-          >
-            {post.type}
-          </span>
           <StatusBadge status={post.status} />
           {isPoll && !post.poll.isClosed && (
             <span
@@ -50,48 +89,28 @@ export function PostCard({ post }: Props) {
                 'bg-indigo-500/15 text-indigo-900 dark:text-indigo-100'
               )}
             >
+              <Vote className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
               הצבעה פתוחה
             </span>
           )}
           {isPoll && post.poll.isClosed && (
             <span className={cn(CHIP, 'bg-muted text-muted-foreground')}>
+              <CheckCircle2 className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
               הוחלט
             </span>
           )}
         </div>
-        <span
-          className={cn(
-            CHIP,
-            'shrink-0 bg-muted/80 text-muted-foreground dark:bg-muted/50'
-          )}
-        >
-          <Clock className="size-3.5 shrink-0 opacity-80" aria-hidden />
-          {post.relativeTime}
-        </span>
-      </div>
-
-      <div className="mt-3 space-y-2">
-        <h2 className="text-[1.06rem] leading-snug font-semibold tracking-tight text-foreground">
-          {post.title}
-        </h2>
-        <p className="text-[0.85rem] leading-relaxed text-muted-foreground">
-          <span className="font-medium text-foreground/90">{post.author}</span>
-          <span aria-hidden> · </span>
-          <span>דירה {post.apartment}</span>
-          {post.location && (
-            <>
-              <span aria-hidden> · </span>
-              <span
-                className={cn(
-                  post.type === 'דיווח' &&
-                    'font-medium text-amber-900/85 dark:text-amber-100'
-                )}
-              >
-                {post.location}
-              </span>
-            </>
-          )}
-        </p>
+        {post.location && (
+          <p
+            className={cn(
+              'text-[0.85rem] leading-relaxed text-muted-foreground',
+              post.type === 'דיווח' &&
+                'font-medium text-amber-900/85 dark:text-amber-100'
+            )}
+          >
+            {post.location}
+          </p>
+        )}
       </div>
 
       {post.bodyPreview && (

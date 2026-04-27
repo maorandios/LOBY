@@ -17,7 +17,7 @@ export const MOCK_POSTS: FeedPost[] = [
     status: 'בטיפול',
     relativeTime: 'לפני 10 דקות',
     title: 'תאורה לא עובדת בחניון',
-    author: 'מאור',
+    author: 'מאור ישראלי',
     apartment: '12',
     location: 'חניון',
     bodyPreview:
@@ -63,7 +63,7 @@ export const MOCK_POSTS: FeedPost[] = [
     status: 'הוחלט',
     relativeTime: 'אתמול',
     title: 'מנגל בגינה היום ב-18:00',
-    author: 'דני',
+    author: 'דני לוי',
     apartment: '5',
     location: 'גינה משותפת',
     bodyPreview:
@@ -78,7 +78,7 @@ export const MOCK_POSTS: FeedPost[] = [
     status: 'פתוח',
     relativeTime: 'לפני 3 שעות',
     title: 'רכב חוסם את חניה 14',
-    author: 'נועה',
+    author: 'נועה כהן',
     apartment: '14',
     location: 'חנייה 14',
     bodyPreview: 'רכב אפור, ללא תג זיהוי. נא סידור דחוף.',
