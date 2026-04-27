@@ -1,14 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Plus } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
-import { CreatePostSheet } from '@/components/feed/create-post-sheet'
 import { FeedHeader } from '@/components/feed/feed-header'
 import { FilterChips } from '@/components/feed/filter-chips'
 import { PostCard } from '@/components/feed/post-card'
 import { BUILDING_NAME, MOCK_POSTS } from '@/data/feed-mock'
-import { cn } from '@/lib/utils'
 import type { FeedFilterId, FeedPost, PostTypeHe } from '@/types/feed'
 
 const FILTER_TO_TYPE: Partial<Record<FeedFilterId, PostTypeHe>> = {
@@ -27,7 +23,6 @@ function filterPosts(posts: FeedPost[], filter: FeedFilterId): FeedPost[] {
 
 export function FeedPage() {
   const [filter, setFilter] = useState<FeedFilterId>('הכל')
-  const [createOpen, setCreateOpen] = useState(false)
 
   const visible = useMemo(
     () => filterPosts(MOCK_POSTS, filter),
@@ -35,7 +30,7 @@ export function FeedPage() {
   )
 
   return (
-    <div className="min-h-svh bg-muted/35 pb-[calc(5.25rem+env(safe-area-inset-bottom))]">
+    <div className="min-h-svh bg-muted/35 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]">
       <div className="sticky top-0 z-40 border-b border-border/60 bg-background/90 shadow-xs backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
         <FeedHeader buildingName={BUILDING_NAME} />
         <div className="px-4">
@@ -64,20 +59,6 @@ export function FeedPage() {
         )}
       </main>
 
-      <Button
-        type="button"
-        size="icon-lg"
-        className={cn(
-          'fixed z-50 size-14 rounded-full shadow-lg shadow-black/10 touch-manipulation',
-          'bottom-[calc(5.25rem+env(safe-area-inset-bottom))] start-4'
-        )}
-        aria-label="יצירת פריט חדש"
-        onClick={() => setCreateOpen(true)}
-      >
-        <Plus className="size-7" strokeWidth={2.25} />
-      </Button>
-
-      <CreatePostSheet open={createOpen} onOpenChange={setCreateOpen} />
       <BottomTabBar />
     </div>
   )

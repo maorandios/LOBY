@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 
+import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MOCK_POSTS } from '@/data/feed-mock'
@@ -11,7 +12,7 @@ export function PostDetailPage() {
   const post = MOCK_POSTS.find((p) => p.id === postId)
 
   return (
-    <div className="min-h-svh bg-muted/35 pb-10 pt-[env(safe-area-inset-top)]">
+    <div className="min-h-svh bg-muted/35 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]">
       <div className="mx-auto max-w-lg px-4 py-4">
         <Link
           to="/"
@@ -43,6 +44,7 @@ export function PostDetailPage() {
           </CardContent>
         </Card>
       </div>
+      <BottomTabBar />
     </div>
   )
 }

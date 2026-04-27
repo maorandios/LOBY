@@ -10,7 +10,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<FeedPage />} />
         <Route path="/post/:postId" element={<PostDetailPage />} />
-        <Route path="/votes" element={<PlaceholderPage title="הצבעות" />} />
+        <Route path="/votes" element={<PlaceholderPage title="סקרים" />} />
         <Route path="/reports" element={<PlaceholderPage title="דיווחים" />} />
         <Route path="/profile" element={<PlaceholderPage title="פרופיל" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
