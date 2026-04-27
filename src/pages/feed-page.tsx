@@ -1,14 +1,27 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 
 import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { FeedHeader } from '@/components/feed/feed-header'
 import { PostCard } from '@/components/feed/post-card'
+import { Button } from '@/components/ui/button'
 import { BUILDING_NAME, MOCK_POSTS } from '@/data/feed-mock'
+import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { cn } from '@/lib/utils'
+
+type FeedLocationState = { newInviteCode?: string }
 
 const SCROLL_BLUR_PX = 12
 
 export function FeedPage() {
+  const location = useLocation()
+  const { member } = useBuildingMembership()
+  const newInviteCode = (location.state as FeedLocationState | null)?.newInviteCode
+  const inviteUrl =
+    newInviteCode && typeof window !== 'undefined'
+      ? `${window.location.origin}/join/${newInviteCode}`
+      : null
+
   const [headerScrolled, setHeaderScrolled] = useState(false)
 
   useEffect(() => {
@@ -35,6 +48,23 @@ export function FeedPage() {
       </div>
 
       <main className="mx-auto max-w-lg px-3 py-4">
+        {inviteUrl && member?.role === 'admin' ? (
+          <div className="mb-4 rounded-xl border border-[#0369a1] bg-[#e0f2fe] px-3 py-3 text-right text-sm text-[#0c4a6e]">
+            <p className="mb-2 font-semibold">קישור הזמנה לדיירים</p>
+            <p className="mb-2 break-all font-mono text-xs leading-relaxed" dir="ltr">
+              {inviteUrl}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 w-full border-[#0369a1] bg-white text-[#0c4a6e]"
+              onClick={() => void navigator.clipboard.writeText(inviteUrl)}
+            >
+              העתקת קישור
+            </Button>
+          </div>
+        ) : null}
+
         {MOCK_POSTS.length === 0 ? (
           <div className="flex min-h-[45vh] flex-col items-center justify-center gap-2 px-4 text-center">
             <p className="text-base font-medium text-foreground">

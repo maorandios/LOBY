@@ -17,8 +17,9 @@ export function consumePostAuthRedirect(): string {
   try {
     const v = localStorage.getItem(KEY)
     localStorage.removeItem(KEY)
-    return safeRedirectPath(v)
+    const next = safeRedirectPath(v)
+    return next === '/' ? '/feed' : next
   } catch {
-    return '/'
+    return '/feed'
   }
 }

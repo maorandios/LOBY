@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS public.buildings (
   name text NOT NULL,
   address text NOT NULL,
   city text NOT NULL,
+  created_by uuid REFERENCES auth.users (id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -33,15 +34,16 @@ ALTER TABLE public.buildings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.building_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invite_codes ENABLE ROW LEVEL SECURITY;
 
--- Buildings
+-- Buildings (created_by lets INSERT...RETURNING pass SELECT RLS before building_members exists)
 CREATE POLICY buildings_insert_authenticated
   ON public.buildings FOR INSERT TO authenticated
-  WITH CHECK (true);
+  WITH CHECK (created_by = (SELECT auth.uid()));
 
 CREATE POLICY buildings_select_member
   ON public.buildings FOR SELECT TO authenticated
   USING (
     id IN (SELECT building_id FROM public.building_members WHERE user_id = (SELECT auth.uid()))
+    OR created_by = (SELECT auth.uid())
   );
 
 -- building_members

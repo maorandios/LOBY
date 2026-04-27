@@ -38,6 +38,7 @@ function JoinBuildingPageInner({ code }: { code: string }) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [building, setBuilding] = useState<InviteBuildingRow | null>(null)
   const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
   const [apartment, setApartment] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -70,8 +71,7 @@ function JoinBuildingPageInner({ code }: { code: string }) {
         const r = row as Record<string, string>
         setBuilding({
           building_id: r.building_id,
-          building_name: r.building_name ?? '',
-          building_address: r.building_address ?? '',
+          full_address: r.full_address ?? '',
           building_city: r.building_city ?? '',
         })
         setPhase('form')
@@ -83,16 +83,17 @@ function JoinBuildingPageInner({ code }: { code: string }) {
   }, [code])
 
   if (!membershipLoading && hasBuilding) {
-    return <Navigate to="/home" replace />
+    return <Navigate to="/feed" replace />
   }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     const fn = fullName.trim()
+    const ph = phone.trim()
     const apt = apartment.trim()
-    if (!fn || !apt) {
-      setError('מלאו שם מלא ומספר דירה.')
+    if (!fn || !ph || !apt) {
+      setError('מלאו שם מלא, מספר טלפון ומספר דירה.')
       return
     }
     if (!session?.user?.id || !building) {
@@ -107,6 +108,7 @@ function JoinBuildingPageInner({ code }: { code: string }) {
         user_id: session.user.id,
         role: 'resident',
         full_name: fn,
+        phone: ph,
         apartment_number: apt,
       })
 
@@ -116,7 +118,7 @@ function JoinBuildingPageInner({ code }: { code: string }) {
       }
 
       await refetch()
-      navigate('/home', { replace: true })
+      navigate('/feed', { replace: true })
     } finally {
       setSubmitting(false)
     }
@@ -140,12 +142,8 @@ function JoinBuildingPageInner({ code }: { code: string }) {
     <AuthScreenShell>
       <header className="flex flex-col gap-2 text-right">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">הצטרפות לבניין</h1>
-        <p className="text-base text-muted-foreground">
-          {building?.building_name}
-          {building?.building_city ? ` · ${building.building_city}` : null}
-        </p>
-        {building?.building_address ? (
-          <p className="text-sm text-muted-foreground">{building.building_address}</p>
+        {building?.full_address ? (
+          <p className="text-base text-muted-foreground">{building.full_address}</p>
         ) : null}
       </header>
 
@@ -161,6 +159,23 @@ function JoinBuildingPageInner({ code }: { code: string }) {
             autoComplete="name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+            disabled={submitting}
+            className={fieldClass}
+          />
+        </div>
+        <div className="flex flex-col gap-2 text-right">
+          <label htmlFor="join-phone" className="text-sm font-medium text-foreground">
+            מספר טלפון
+          </label>
+          <input
+            id="join-phone"
+            name="phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            dir="ltr"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
             disabled={submitting}
             className={fieldClass}
           />

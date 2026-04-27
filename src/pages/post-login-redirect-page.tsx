@@ -5,7 +5,7 @@ import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { OnboardingLoadingPage } from './onboarding-loading-page'
 
 /**
- * `/` after login: has building → home; otherwise admin onboarding (residents use `/join/:code`).
+ * `/` after login: has building → feed; otherwise admin onboarding (residents use `/join/:code`).
  */
 export function PostLoginRedirectPage() {
   const { hasBuilding, loading } = useBuildingMembership()
@@ -15,7 +15,7 @@ export function PostLoginRedirectPage() {
   }
 
   if (hasBuilding) {
-    return <Navigate to="/home" replace />
+    return <Navigate to="/feed" replace />
   }
 
   return <Navigate to="/onboarding/admin" replace />

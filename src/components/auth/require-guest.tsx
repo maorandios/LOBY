@@ -16,7 +16,7 @@ export function RequireGuest({ children }: { children: ReactNode }) {
 
   if (session) {
     const next = safeRedirectPath(search.get('redirect'))
-    return <Navigate to={next} replace />
+    return <Navigate to={next === '/' ? '/feed' : next} replace />
   }
 
   return <>{children}</>

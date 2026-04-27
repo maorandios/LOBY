@@ -27,7 +27,7 @@ export function useBuildingMembership() {
       setLoading(true)
       const { data, error } = await supabase
         .from('building_members')
-        .select('id, building_id, user_id, role, full_name, apartment_number')
+        .select('id, building_id, user_id, role, full_name, apartment_number, phone')
         .eq('user_id', session.user.id)
         .maybeSingle()
 

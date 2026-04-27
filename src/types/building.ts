@@ -7,11 +7,11 @@ export type BuildingMemberRow = {
   role: BuildingMemberRole
   full_name: string | null
   apartment_number: string | null
+  phone: string | null
 }
 
 export type InviteBuildingRow = {
   building_id: string
-  building_name: string
-  building_address: string
+  full_address: string
   building_city: string
 }
