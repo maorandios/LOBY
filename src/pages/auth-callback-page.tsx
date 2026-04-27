@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { AuthScreenShell } from '@/components/auth/auth-screen-shell'
 import { Button } from '@/components/ui/button'
+import { isAuthBypassEnabled } from '@/lib/auth-bypass'
 import { supabase } from '@/lib/supabase'
 
 export function AuthCallbackPage() {
@@ -10,6 +11,11 @@ export function AuthCallbackPage() {
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
+    if (isAuthBypassEnabled()) {
+      navigate('/home', { replace: true })
+      return
+    }
+
     let cancelled = false
     let finished = false
 

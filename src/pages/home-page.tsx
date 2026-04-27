@@ -11,16 +11,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
 export function HomePage() {
-  const { session } = useAuth()
+  const { session, authBypassActive, signOutApp } = useAuth()
   const navigate = useNavigate()
   const email = session?.user?.email ?? ''
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
+    await signOutApp()
     navigate('/login', { replace: true })
   }
 
@@ -57,6 +56,11 @@ export function HomePage() {
                 <span className="font-medium text-foreground" dir="ltr">
                   {email}
                 </span>
+                {authBypassActive ? (
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    (מצב פיתוח — ללא Supabase Auth)
+                  </span>
+                ) : null}
               </p>
             ) : null}
 

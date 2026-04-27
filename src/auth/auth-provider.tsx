@@ -8,18 +8,55 @@ import {
 } from 'react'
 
 import { AuthContext, type AuthContextValue } from '@/auth/auth-context'
+import {
+  clearAuthBypassSignedOut,
+  createBypassMockSession,
+  isAuthBypassEnabled,
+  isAuthBypassSignedOut,
+  setAuthBypassSignedOut,
+} from '@/lib/auth-bypass'
 import { supabase } from '@/lib/supabase'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const bypass = isAuthBypassEnabled()
+  const [session, setSession] = useState<Session | null>(() => {
+    if (!bypass) return null
+    return isAuthBypassSignedOut() ? null : createBypassMockSession()
+  })
+  const [loading, setLoading] = useState(() => !bypass)
 
   const refreshSession = useCallback(async () => {
+    if (bypass) {
+      setSession(isAuthBypassSignedOut() ? null : createBypassMockSession())
+      return
+    }
     const { data } = await supabase.auth.getSession()
     setSession(data.session ?? null)
-  }, [])
+  }, [bypass])
+
+  const signOutApp = useCallback(async () => {
+    if (bypass) {
+      setAuthBypassSignedOut()
+      setSession(null)
+      return
+    }
+    await supabase.auth.signOut()
+    setSession(null)
+  }, [bypass])
 
   useEffect(() => {
+    if (import.meta.env.PROD && bypass) {
+      console.warn(
+        '[LOBY] VITE_AUTH_BYPASS=true — auth is disabled. Remove for real users / production.'
+      )
+    }
+  }, [bypass])
+
+  useEffect(() => {
+    if (bypass) {
+      return
+    }
+
     let mounted = true
 
     void supabase.auth.getSession().then(({ data }) => {
@@ -31,6 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, next) => {
+      if (next) {
+        clearAuthBypassSignedOut()
+      }
       setSession(next)
       setLoading(false)
     })
@@ -39,11 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [bypass])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ session, loading, refreshSession }),
-    [session, loading, refreshSession]
+    () => ({
+      session,
+      loading,
+      authBypassActive: bypass,
+      refreshSession,
+      signOutApp,
+    }),
+    [session, loading, bypass, refreshSession, signOutApp]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -3,6 +3,8 @@
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string
   readonly VITE_SUPABASE_ANON_KEY?: string
+  /** Set to `"true"` to skip Supabase login (mock session). Never use on public production. */
+  readonly VITE_AUTH_BYPASS?: string
 }
 
 interface ImportMeta {
