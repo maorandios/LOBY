@@ -41,7 +41,7 @@ const NAV_ITEMS: [NavItem, NavItem, NavItem, NavItem] = [
 
 function NavTab({ to, label, icon: Icon, end }: NavItem) {
   return (
-    <div className="flex min-w-0 flex-1 basis-0 justify-center">
+    <div className="flex min-w-0 flex-1 basis-0 justify-center p-[5px]">
       <NavLink
         to={to}
         end={end}
