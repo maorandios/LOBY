@@ -24,6 +24,10 @@ export interface PollData {
   isClosed: boolean
   /** If set in mock, card opens in “after vote” mode */
   initialVoteOptionId?: string | null
+  /** Total eligible voters (for “X voted out of Y” summary) */
+  eligibleVoters: number
+  /** When true — poll was cancelled; no voting */
+  isCancelled?: boolean
 }
 
 export interface FeedPostBase {

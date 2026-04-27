@@ -38,7 +38,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'האם לאשר צביעת הלובי?',
     author: 'ועד הבית',
     apartment: '—',
-    location: 'לובי',
     bodyPreview: 'הצעת צבעים מצורפת בנוסף לפוסט.',
     comments: 9,
     views: 112,
@@ -49,6 +48,8 @@ export const MOCK_POSTS: FeedPost[] = [
     poll: {
       isClosed: false,
       initialVoteOptionId: null,
+      eligibleVoters: 48,
+      isCancelled: false,
       options: [
         { id: 'a', label: 'גוון אפור בהיר', votes: 6 },
         { id: 'b', label: 'גוון קרם', votes: 4 },
@@ -125,6 +126,8 @@ export const MOCK_POSTS: FeedPost[] = [
     poll: {
       isClosed: true,
       initialVoteOptionId: 'yes',
+      eligibleVoters: 56,
+      isCancelled: false,
       options: [
         { id: 'yes', label: 'כן, להאריך בשנה', votes: 28 },
         { id: 'no', label: 'לא, לפרסם מכרז', votes: 9 },
@@ -140,7 +143,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'מישהו יכול לאשר קבלה זמנית?',
     author: 'שירה',
     apartment: '8',
-    location: 'דלפק קבלה',
     bodyPreview:
       'מצפים לחבילה גדולה מחר בבוקר. מי שיכול לעזור — נשמח לשורה בפרטי.',
     comments: 6,

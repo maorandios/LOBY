@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle2, Heart, MessageCircle, Vote } from 'lucide-react'
+import { Ban, CheckCircle2, Heart, MessageCircle, Vote } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PollBlock } from '@/components/feed/poll-block'
@@ -24,6 +24,10 @@ type Props = {
 export function PostCard({ post }: Props) {
   const navigate = useNavigate()
   const isPoll = isPollPost(post)
+  const isUpdate = post.type === 'עדכון'
+  const isReport = post.type === 'דיווח'
+  const isRequest = post.type === 'בקשה'
+  const compactCommentFooter = isUpdate || isReport || isPoll || isRequest
   const [liked, setLiked] = useState(false)
 
   function goToPost() {
@@ -31,6 +35,15 @@ export function PostCard({ post }: Props) {
   }
 
   const TypeIcon = postTypeLucideIcon[post.type]
+
+  const typeChip = (
+    <span
+      className={cn(CHIP, 'shrink-0 text-foreground', typeBadgeClass(post.type))}
+    >
+      <TypeIcon className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+      {postTypeChipLabel(post.type)}
+    </span>
+  )
 
   const residentMeta = (
     <>
@@ -50,6 +63,39 @@ export function PostCard({ post }: Props) {
     </>
   )
 
+  const pollPhaseChip = isPoll ? (
+    (() => {
+      const p = post.poll
+      const phase = p.isCancelled
+        ? {
+            label: 'הצבעה בוטלה',
+            Icon: Ban,
+            className:
+              'bg-rose-500/12 text-rose-950 dark:bg-rose-500/20 dark:text-rose-50',
+          }
+        : p.isClosed
+          ? {
+              label: 'הצבעה הסתיימה',
+              Icon: CheckCircle2,
+              className:
+                'bg-neutral-500/12 text-neutral-800 dark:bg-neutral-400/15 dark:text-neutral-200',
+            }
+          : {
+              label: 'הצבעה פתוחה',
+              Icon: Vote,
+              className:
+                'bg-indigo-500/15 text-indigo-900 dark:text-indigo-100',
+            }
+      const PhIcon = phase.Icon
+      return (
+        <span className={cn(CHIP, phase.className)}>
+          <PhIcon className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+          {phase.label}
+        </span>
+      )
+    })()
+  ) : null
+
   return (
     <article
       className={cn(
@@ -59,64 +105,46 @@ export function PostCard({ post }: Props) {
       )}
       onClick={goToPost}
     >
-      {/* RTL: first child → physical right; second → physical left */}
       <div className="flex w-full items-start justify-between gap-3">
         <p className="min-w-0 flex-1 text-start text-[0.8rem] leading-snug text-foreground">
           {residentMeta}
         </p>
-        <span
-          className={cn(
-            CHIP,
-            'shrink-0 text-foreground',
-            typeBadgeClass(post.type)
-          )}
-        >
-          <TypeIcon className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
-          {postTypeChipLabel(post.type)}
-        </span>
-      </div>
-
-      <div className="mt-3 space-y-2">
-        <h2 className="text-[1.06rem] leading-snug font-semibold tracking-tight text-foreground">
-          {post.title}
-        </h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={post.status} />
-          {isPoll && !post.poll.isClosed && (
-            <span
-              className={cn(
-                CHIP,
-                'bg-indigo-500/15 text-indigo-900 dark:text-indigo-100'
-              )}
-            >
-              <Vote className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
-              הצבעה פתוחה
+        {isReport ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+            {typeChip}
+            <span aria-hidden className="text-muted-foreground/80">
+              ·
             </span>
-          )}
-          {isPoll && post.poll.isClosed && (
-            <span className={cn(CHIP, 'bg-muted text-muted-foreground')}>
-              <CheckCircle2 className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
-              הוחלט
+            <StatusBadge status={post.status} />
+          </div>
+        ) : isPoll ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+            {typeChip}
+            <span aria-hidden className="text-muted-foreground/80">
+              ·
             </span>
-          )}
-        </div>
-        {post.location && (
-          <p
-            className={cn(
-              'text-[0.85rem] leading-relaxed text-muted-foreground',
-              post.type === 'דיווח' &&
-                'font-medium text-amber-900/85 dark:text-amber-100'
-            )}
-          >
-            {post.location}
-          </p>
+            {pollPhaseChip}
+          </div>
+        ) : (
+          typeChip
         )}
       </div>
 
+      <div className="mt-3">
+        <h2 className="text-[1.06rem] leading-snug font-semibold tracking-tight text-foreground">
+          {post.title}
+        </h2>
+      </div>
+
       {post.bodyPreview && (
-        <p className="mt-3 line-clamp-2 text-[0.9rem] leading-relaxed text-foreground/90">
+        <p
+          className={cn(
+            'mt-3 text-[0.9rem] leading-relaxed text-foreground/90',
+            isUpdate ? '' : 'line-clamp-2'
+          )}
+        >
           {post.bodyPreview}
-          {post.bodyPreview.length > 90 && (
+          {!isUpdate && post.bodyPreview.length > 90 && (
             <span className="ms-1 text-[0.75rem] font-medium text-primary/80">
               קרא עוד
             </span>
@@ -124,14 +152,14 @@ export function PostCard({ post }: Props) {
         </p>
       )}
 
-      {post.hasImage && (
+      {post.hasImage && !isUpdate && !isPoll && (
         <div
           className="relative mt-4 aspect-square w-full overflow-hidden rounded-2xl bg-muted"
           aria-hidden
         />
       )}
 
-      {isPoll && (
+      {isPoll && !isUpdate && (
         <div
           className="mt-4 rounded-2xl bg-muted/45 p-3 dark:bg-muted/25"
           onClick={(e) => e.stopPropagation()}
@@ -146,31 +174,53 @@ export function PostCard({ post }: Props) {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
-        <Button
-          type="button"
-          variant="secondary"
-          className="h-10 flex-1 rounded-full gap-2 font-semibold shadow-none"
-          onClick={() => navigate(`/post/${post.id}`)}
-        >
-          <MessageCircle className="size-4" aria-hidden />
-          תגובה
-        </Button>
-        <Button
-          type="button"
-          variant={liked ? 'default' : 'secondary'}
-          className={cn(
-            'h-10 flex-1 rounded-full gap-2 font-semibold shadow-none',
-            liked && 'bg-rose-600 text-white hover:bg-rose-600/90 dark:bg-rose-600'
-          )}
-          onClick={() => setLiked((v) => !v)}
-          aria-pressed={liked}
-        >
-          <Heart
-            className={cn('size-4', liked && 'fill-current')}
-            aria-hidden
-          />
-          לייק
-        </Button>
+        {compactCommentFooter ? (
+          <div className="flex w-full items-stretch gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-10 min-w-0 flex-1 rounded-full font-semibold shadow-none"
+              onClick={() => navigate(`/post/${post.id}`)}
+            >
+              תגובה
+            </Button>
+            <div
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-muted/70 px-4 text-sm font-semibold text-foreground dark:bg-muted/50"
+              aria-label={`${post.comments} תגובות`}
+            >
+              <MessageCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="tabular-nums">{post.comments}</span>
+            </div>
+          </div>
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-10 flex-1 rounded-full gap-2 font-semibold shadow-none"
+              onClick={() => navigate(`/post/${post.id}`)}
+            >
+              <MessageCircle className="size-4" aria-hidden />
+              תגובה
+            </Button>
+            <Button
+              type="button"
+              variant={liked ? 'default' : 'secondary'}
+              className={cn(
+                'h-10 flex-1 rounded-full gap-2 font-semibold shadow-none',
+                liked && 'bg-rose-600 text-white hover:bg-rose-600/90 dark:bg-rose-600'
+              )}
+              onClick={() => setLiked((v) => !v)}
+              aria-pressed={liked}
+            >
+              <Heart
+                className={cn('size-4', liked && 'fill-current')}
+                aria-hidden
+              />
+              לייק
+            </Button>
+          </>
+        )}
       </div>
     </article>
   )
