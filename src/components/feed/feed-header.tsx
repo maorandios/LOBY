@@ -9,12 +9,7 @@ type Props = {
 
 export function FeedHeader({ buildingName, className }: Props) {
   return (
-    <header
-      className={cn(
-        'flex flex-col pt-[env(safe-area-inset-top)]',
-        className
-      )}
-    >
+    <header className={cn('flex flex-col', className)}>
       <div className="flex justify-center px-3 pb-3 pt-5">
         <div className="flex min-w-0 max-w-full items-center justify-center gap-2">
           <Building2

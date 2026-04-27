@@ -12,7 +12,7 @@ export function PostDetailPage() {
   const post = MOCK_POSTS.find((p) => p.id === postId)
 
   return (
-    <div className="min-h-svh bg-muted/35 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]">
+    <div className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]">
       <div className="mx-auto max-w-lg px-4 py-4">
         <Link
           to="/"

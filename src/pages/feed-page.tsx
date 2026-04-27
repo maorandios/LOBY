@@ -21,14 +21,14 @@ export function FeedPage() {
   }, [])
 
   return (
-    <div className="min-h-svh bg-muted/35 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]">
+    <div className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]">
       <div
         className={cn(
-          'sticky top-0 z-40 border-b border-border/60',
+          'sticky top-0 z-40 pt-[env(safe-area-inset-top)]',
           'transition-[backdrop-filter,background-color] duration-300 ease-out',
           headerScrolled
-            ? 'backdrop-blur-xl bg-muted/25 supports-[backdrop-filter]:bg-muted/20'
-            : 'bg-muted/35 backdrop-blur-none'
+            ? 'backdrop-blur-xl bg-feed-canvas/80 supports-[backdrop-filter]:bg-feed-canvas/72'
+            : 'bg-feed-canvas backdrop-blur-none'
         )}
       >
         <FeedHeader buildingName={BUILDING_NAME} />
