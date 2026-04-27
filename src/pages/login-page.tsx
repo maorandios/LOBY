@@ -6,6 +6,13 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 
 type Step = 'form' | 'sent'
 
+/** Explicit hex (no oklch) — some mobile WebViews render token/opacity utilities as solid red blocks. */
+const calloutWarningClass =
+  'rounded-xl border border-[#ca8a04] bg-[#fffbeb] px-3 py-3 text-right text-sm text-[#713f12] shadow-sm [html:not(:lang(he))]:text-left'
+
+const calloutErrorClass =
+  'rounded-xl border border-[#ef4444] bg-[#fef2f2] px-3 py-2 text-right text-sm text-[#991b1b] shadow-sm [html:not(:lang(he))]:text-left'
+
 function hebrewAuthError(message: string): string {
   const m = message.toLowerCase()
   if (m.includes('invalid login credentials')) {
@@ -96,17 +103,28 @@ export function LoginPage() {
       </header>
 
       {!configured ? (
-        <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-3 text-right text-sm text-destructive">
-          חסרות הגדרות Supabase. הוסיפו את{' '}
-          <span className="font-mono text-xs" dir="ltr">
-            VITE_SUPABASE_URL
-          </span>{' '}
-          ו־
-          <span className="font-mono text-xs" dir="ltr">
-            VITE_SUPABASE_ANON_KEY
-          </span>{' '}
-          בקובץ סביבה וב־Vercel.
-        </p>
+        <div className={calloutWarningClass} role="status">
+          <p className="mb-2 font-semibold text-[#713f12]">השרת עדיין לא מוגדר</p>
+          <p className="mb-2 leading-relaxed">
+            באפליקציה שפורסמה (למשל ב־Vercel) חסרים משתני הסביבה של Supabase בזמן הבנייה, או שלא בוצע
+            Deploy מחדש אחרי שהוספתם אותם.
+          </p>
+          <p className="mb-1 text-xs font-medium text-[#713f12]">מה לעשות (מפתחים):</p>
+          <ul className="list-inside list-disc space-y-1 text-xs leading-relaxed text-[#713f12]">
+            <li>
+              בפרויקט Vercel: Settings → Environment Variables — הוסיפו{' '}
+              <span className="font-mono" dir="ltr">
+                VITE_SUPABASE_URL
+              </span>{' '}
+              ו־
+              <span className="font-mono" dir="ltr">
+                VITE_SUPABASE_ANON_KEY
+              </span>
+            </li>
+            <li>שמרו, ואז Deploy מחדש את האתר (Redeploy).</li>
+            <li>ב־Supabase: הוסיפו את כתובת האתר שלכם תחת Redirect URLs (כולל /auth/callback).</li>
+          </ul>
+        </div>
       ) : null}
 
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -125,15 +143,12 @@ export function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading || !configured}
-            className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-11 w-full rounded-lg border border-[#d4d4d8] bg-white px-3 text-base text-[#18181b] outline-none transition-[box-shadow,border-color] placeholder:text-[#71717a] focus-visible:border-[#a1a1aa] focus-visible:ring-2 focus-visible:ring-[#d4d4d8] disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
 
         {error ? (
-          <p
-            className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-right text-sm text-destructive"
-            role="alert"
-          >
+          <p className={calloutErrorClass} role="alert">
             {error}
           </p>
         ) : null}

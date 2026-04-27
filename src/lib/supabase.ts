@@ -3,6 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 const envUrl = import.meta.env.VITE_SUPABASE_URL?.trim() ?? ''
 const envAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? ''
 
+if (import.meta.env.PROD && (!envUrl || !envAnonKey)) {
+  console.warn(
+    '[LOBY] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY at build time. Set them in Vercel (or your host) and redeploy.'
+  )
+}
+
 /**
  * createClient throws if the URL is empty. Use placeholders so the app can boot without .env
  * (login UI shows a configuration message; avoid a blank screen).
