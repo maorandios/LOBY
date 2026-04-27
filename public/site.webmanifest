@@ -1,0 +1,19 @@
+{
+  "name": "לובי — תקשורת בניין",
+  "short_name": "לובי",
+  "description": "לוח הודעות מובנה לדיירי הבניין",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
