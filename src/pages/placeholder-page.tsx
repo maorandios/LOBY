@@ -17,7 +17,7 @@ export function PlaceholderPage({ title }: Props) {
           מסך זה הוא מציין מקום בלבד. הניווט התחתון מסייע לבחון את חוויית ה־PWA.
         </p>
         <Link
-          to="/"
+          to="/feed"
           className={cn(
             buttonVariants({ size: 'lg' }),
             'mt-6 inline-flex min-h-11 touch-manipulation'

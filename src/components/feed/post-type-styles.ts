@@ -16,7 +16,8 @@ export const postTypeLucideIcon: Record<PostTypeHe, LucideIcon> = {
   בקשה: Handshake,
 }
 
-export function cardAccentByType(_type: PostTypeHe) {
+export function cardAccentByType(type: PostTypeHe) {
+  void type
   return cn(
     'rounded-3xl bg-card shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.45)]'
   )

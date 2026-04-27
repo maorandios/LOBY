@@ -15,7 +15,7 @@ export function PostDetailPage() {
     <div className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]">
       <div className="mx-auto max-w-lg px-4 py-4">
         <Link
-          to="/"
+          to="/feed"
           className={cn(
             buttonVariants({ variant: 'ghost', size: 'lg' }),
             'mb-4 min-h-11 touch-manipulation gap-2 ps-1 text-muted-foreground'

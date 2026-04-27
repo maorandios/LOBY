@@ -36,7 +36,7 @@ type NavItem = {
 }
 
 const NAV_ITEMS: [NavItem, NavItem, NavItem, NavItem] = [
-  { to: '/', label: 'פיד', icon: Home, end: true },
+  { to: '/feed', label: 'פיד', icon: Home, end: false },
   { to: '/votes', label: 'סקרים', icon: BarChart2, end: false },
   { to: '/reports', label: 'דיווחים', icon: ClipboardList, end: false },
   { to: '/profile', label: 'פרופיל', icon: UserRound, end: false },
