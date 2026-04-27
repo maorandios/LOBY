@@ -1,14 +1,9 @@
-import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
-import { useAuth } from '@/auth/use-auth'
 import { AuthScreenShell } from '@/components/auth/auth-screen-shell'
 import { Button } from '@/components/ui/button'
-import {
-  canUseEmergencyBypassHost,
-  clearAuthBypassSignedOut,
-  enableEmergencyAuthBypass,
-} from '@/lib/auth-bypass'
+import { stashPostAuthRedirect } from '@/lib/post-auth-redirect'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 
 type Step = 'form' | 'sent'
@@ -19,9 +14,6 @@ const calloutWarningClass =
 
 const calloutErrorClass =
   'rounded-xl border border-[#ef4444] bg-[#fef2f2] px-3 py-2 text-right text-sm text-[#991b1b] shadow-sm [html:not(:lang(he))]:text-left'
-
-const devBypassClass =
-  'rounded-xl border border-[#0369a1] bg-[#e0f2fe] px-3 py-3 text-right text-sm text-[#0c4a6e] shadow-sm [html:not(:lang(he))]:text-left'
 
 function isRateLimitErrorMessage(message: string): boolean {
   const m = message.toLowerCase()
@@ -50,14 +42,20 @@ function hebrewAuthError(message: string): string {
 }
 
 export function LoginPage() {
-  const navigate = useNavigate()
-  const { authBypassActive, refreshSession } = useAuth()
+  const [search] = useSearchParams()
+
+  useEffect(() => {
+    const r = search.get('redirect')
+    if (r) {
+      stashPostAuthRedirect(r)
+    }
+  }, [search])
+
   const configured = isSupabaseConfigured()
   const [step, setStep] = useState<Step>('form')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [rateLimited, setRateLimited] = useState(false)
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -71,7 +69,6 @@ export function LoginPage() {
 
     setLoading(true)
     try {
-      setRateLimited(false)
       const origin = window.location.origin
       const { error: signError } = await supabase.auth.signInWithOtp({
         email: trimmed,
@@ -80,9 +77,6 @@ export function LoginPage() {
         },
       })
       if (signError) {
-        if (isRateLimitErrorMessage(signError.message)) {
-          setRateLimited(true)
-        }
         setError(hebrewAuthError(signError.message))
         return
       }
@@ -95,51 +89,6 @@ export function LoginPage() {
   function backToForm() {
     setStep('form')
     setError(null)
-  }
-
-  if (authBypassActive) {
-    return (
-      <AuthScreenShell>
-        <header className="flex flex-col gap-2 text-right">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            כניסה למערכת
-          </h1>
-          <p className="text-base leading-relaxed text-muted-foreground">
-            מצב פיתוח — ללא שליחת מייל
-          </p>
-        </header>
-
-        <div className={devBypassClass} role="status">
-          <p className="mb-2 font-semibold">דילוג על Supabase Auth</p>
-          <p className="mb-3 text-xs leading-relaxed">
-            {import.meta.env.VITE_AUTH_BYPASS === 'true' ? (
-              <>
-                מוגדר <span className="font-mono" dir="ltr">VITE_AUTH_BYPASS=true</span> בבנייה. לא נשלחים מיילים.
-                להסיר בייצור אמיתי.
-              </>
-            ) : (
-              <>
-                מצב חירום בדפדפן (localhost / <span dir="ltr">*.vercel.app</span> בלבד). לא נשלחים מיילים. לבטל: פתחו
-                קונסולה והריצו{' '}
-                <span className="font-mono text-[0.65rem]" dir="ltr">
-                  localStorage.removeItem(&apos;loby:emergency_auth_bypass&apos;); location.reload()
-                </span>
-              </>
-            )}
-          </p>
-          <Button
-            type="button"
-            className="h-11 w-full touch-manipulation text-base"
-            onClick={() => {
-              clearAuthBypassSignedOut()
-              void refreshSession().then(() => navigate('/home', { replace: true }))
-            }}
-          >
-            כניסה לאפליקציה
-          </Button>
-        </div>
-      </AuthScreenShell>
-    )
   }
 
   if (step === 'sent') {
@@ -225,26 +174,6 @@ export function LoginPage() {
           <p className={calloutErrorClass} role="alert">
             {error}
           </p>
-        ) : null}
-
-        {rateLimited && canUseEmergencyBypassHost() ? (
-          <div className={devBypassClass} role="status">
-            <p className="mb-2 font-semibold">מגבלת שליחת מייל ב־Supabase</p>
-            <p className="mb-3 text-xs leading-relaxed">
-              אפשר להמשיך לפתח בלי קישור מייל באתר זה בלבד: לחיצה תטעין מחדש עם מצב בדיקה (ללא Supabase Auth).
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 w-full touch-manipulation border-[#0369a1] bg-white text-base text-[#0c4a6e] hover:bg-[#e0f2fe]"
-              onClick={() => {
-                enableEmergencyAuthBypass()
-                window.location.reload()
-              }}
-            >
-              כניסה במצב בדיקה (ללא מייל)
-            </Button>
-          </div>
         ) : null}
 
         <Button

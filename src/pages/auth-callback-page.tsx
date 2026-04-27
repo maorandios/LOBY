@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { AuthScreenShell } from '@/components/auth/auth-screen-shell'
 import { Button } from '@/components/ui/button'
-import { isAuthBypassEnabled } from '@/lib/auth-bypass'
+import { consumePostAuthRedirect } from '@/lib/post-auth-redirect'
 import { supabase } from '@/lib/supabase'
 
 export function AuthCallbackPage() {
@@ -11,18 +11,17 @@ export function AuthCallbackPage() {
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    if (isAuthBypassEnabled()) {
-      navigate('/home', { replace: true })
-      return
-    }
-
     let cancelled = false
     let finished = false
+    let postAuthTarget: string | null = null
 
     function goHome() {
       if (cancelled || finished) return
       finished = true
-      navigate('/home', { replace: true })
+      if (postAuthTarget === null) {
+        postAuthTarget = consumePostAuthRedirect()
+      }
+      navigate(postAuthTarget, { replace: true })
     }
 
     const {
