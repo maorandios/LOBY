@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Ban, CheckCircle2, Heart, MessageCircle, Vote } from 'lucide-react'
+import { Heart, MessageCircle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PollBlock } from '@/components/feed/poll-block'
@@ -63,43 +63,10 @@ export function PostCard({ post }: Props) {
     </>
   )
 
-  const pollPhaseChip = isPoll ? (
-    (() => {
-      const p = post.poll
-      const phase = p.isCancelled
-        ? {
-            label: 'הצבעה בוטלה',
-            Icon: Ban,
-            className:
-              'bg-rose-500/12 text-rose-950 dark:bg-rose-500/20 dark:text-rose-50',
-          }
-        : p.isClosed
-          ? {
-              label: 'הצבעה הסתיימה',
-              Icon: CheckCircle2,
-              className:
-                'bg-neutral-500/12 text-neutral-800 dark:bg-neutral-400/15 dark:text-neutral-200',
-            }
-          : {
-              label: 'הצבעה פתוחה',
-              Icon: Vote,
-              className:
-                'bg-indigo-500/15 text-indigo-900 dark:text-indigo-100',
-            }
-      const PhIcon = phase.Icon
-      return (
-        <span className={cn(CHIP, phase.className)}>
-          <PhIcon className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
-          {phase.label}
-        </span>
-      )
-    })()
-  ) : null
-
   return (
     <article
       className={cn(
-        'cursor-pointer touch-manipulation overflow-hidden p-4 transition-[box-shadow,transform] duration-200',
+        'flex cursor-pointer touch-manipulation flex-col overflow-hidden p-5 transition-[box-shadow,transform] duration-200',
         'hover:-translate-y-px hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.5)]',
         cardAccentByType(post.type)
       )}
@@ -109,65 +76,61 @@ export function PostCard({ post }: Props) {
         <p className="min-w-0 flex-1 text-start text-[0.8rem] leading-snug text-foreground">
           {residentMeta}
         </p>
-        {isReport ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-            {typeChip}
-            <span aria-hidden className="text-muted-foreground/80">
-              ·
-            </span>
+        {typeChip}
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3">
+        {isReport || isPoll ? (
+          <div className="flex flex-wrap items-center gap-1.5">
             <StatusBadge status={post.status} />
-          </div>
-        ) : isPoll ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-            {typeChip}
             <span aria-hidden className="text-muted-foreground/80">
               ·
             </span>
-            {pollPhaseChip}
+            <h2 className="min-w-0 flex-1 text-start text-[1.06rem] leading-snug font-semibold tracking-tight text-foreground">
+              {post.title}
+            </h2>
           </div>
         ) : (
-          typeChip
+          <div>
+            <h2 className="text-[1.06rem] leading-snug font-semibold tracking-tight text-foreground">
+              {post.title}
+            </h2>
+          </div>
+        )}
+
+        {post.bodyPreview && (
+          <p
+            className={cn(
+              'text-[0.9rem] leading-relaxed text-foreground/90',
+              isUpdate ? '' : 'line-clamp-2'
+            )}
+          >
+            {post.bodyPreview}
+            {!isUpdate && post.bodyPreview.length > 90 && (
+              <span className="ms-1 text-[0.75rem] font-medium text-primary/80">
+                קרא עוד
+              </span>
+            )}
+          </p>
+        )}
+
+        {post.hasImage && !isUpdate && !isPoll && (
+          <div
+            className="relative aspect-square w-full overflow-hidden rounded-2xl bg-muted"
+            aria-hidden
+          />
+        )}
+
+        {isPoll && !isUpdate && (
+          <div
+            className="rounded-2xl bg-muted/45 p-3 dark:bg-muted/25"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <PollBlock postId={post.id} poll={post.poll} />
+          </div>
         )}
       </div>
-
-      <div className="mt-3">
-        <h2 className="text-[1.06rem] leading-snug font-semibold tracking-tight text-foreground">
-          {post.title}
-        </h2>
-      </div>
-
-      {post.bodyPreview && (
-        <p
-          className={cn(
-            'mt-3 text-[0.9rem] leading-relaxed text-foreground/90',
-            isUpdate ? '' : 'line-clamp-2'
-          )}
-        >
-          {post.bodyPreview}
-          {!isUpdate && post.bodyPreview.length > 90 && (
-            <span className="ms-1 text-[0.75rem] font-medium text-primary/80">
-              קרא עוד
-            </span>
-          )}
-        </p>
-      )}
-
-      {post.hasImage && !isUpdate && !isPoll && (
-        <div
-          className="relative mt-4 aspect-square w-full overflow-hidden rounded-2xl bg-muted"
-          aria-hidden
-        />
-      )}
-
-      {isPoll && !isUpdate && (
-        <div
-          className="mt-4 rounded-2xl bg-muted/45 p-3 dark:bg-muted/25"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <PollBlock postId={post.id} poll={post.poll} />
-        </div>
-      )}
 
       <div
         className="mt-4 flex gap-2"
