@@ -17,9 +17,12 @@ const TEAL = '#3EBDA5'
 const ROUND_SLOT =
   'box-border flex h-[4.25rem] w-[4.25rem] min-h-[4.25rem] min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-full p-1.5 text-center font-semibold'
 
-const ICON_BOX = 'flex h-5 w-5 shrink-0 items-center justify-center'
-const STROKE = 2
-const LABEL = 'w-full min-h-0 max-w-full px-0.5 text-[0.5rem] leading-tight [overflow-wrap:anywhere]'
+/** Icon + label 15% larger than base `size-5` / `text-[0.5rem]`; circles unchanged. */
+const ICON_BOX = 'flex h-[1.4375rem] w-[1.4375rem] shrink-0 items-center justify-center'
+const ICON_SIZE = 'size-[1.4375rem]'
+const STROKE = 2.3
+const LABEL =
+  'w-full min-h-0 max-w-full px-0.5 text-[0.575rem] leading-tight [overflow-wrap:anywhere]'
 
 function SlotLabel({ children }: { children: ReactNode }) {
   return <span className={cn(LABEL, 'text-inherit')}>{children}</span>
@@ -56,7 +59,7 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
         }
       >
         <span className={cn(ICON_BOX, 'text-inherit')}>
-          <Icon className="size-5" strokeWidth={STROKE} aria-hidden />
+          <Icon className={ICON_SIZE} strokeWidth={STROKE} aria-hidden />
         </span>
         <SlotLabel>{label}</SlotLabel>
       </NavLink>
@@ -101,7 +104,7 @@ export function BottomTabBar() {
                 aria-label="פוסט חדש"
               >
                 <span className={cn(ICON_BOX, 'text-inherit')}>
-                  <Plus className="size-5" strokeWidth={STROKE} aria-hidden />
+                  <Plus className={ICON_SIZE} strokeWidth={STROKE} aria-hidden />
                 </span>
                 <SlotLabel>פוסט</SlotLabel>
               </button>
