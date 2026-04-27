@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   BarChart2,
   ClipboardList,
@@ -13,11 +13,17 @@ import { cn } from '@/lib/utils'
 
 const TEAL = '#3EBDA5'
 
-/** One shared circle size: icon + label both inside. */
-const CIRCLE_DIM = 'h-[5rem] w-[5rem] min-h-[5rem] min-w-[5rem]'
+/** One physical size for every tab (pixel-aligned); icon + label never overlap. */
+const ROUND_SLOT =
+  'box-border flex h-[4.25rem] w-[4.25rem] min-h-[4.25rem] min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-full p-1.5 text-center font-semibold'
 
-const ICON_CLASS = 'size-6 shrink-0 text-current'
-const ICON_STROKE = 2
+const ICON_BOX = 'flex h-5 w-5 shrink-0 items-center justify-center'
+const STROKE = 2
+const LABEL = 'w-full min-h-0 max-w-full px-0.5 text-[0.5rem] leading-tight [overflow-wrap:anywhere]'
+
+function SlotLabel({ children }: { children: ReactNode }) {
+  return <span className={cn(LABEL, 'text-inherit')}>{children}</span>
+}
 
 type NavItem = {
   to: string
@@ -35,26 +41,24 @@ const NAV_ITEMS: [NavItem, NavItem, NavItem, NavItem] = [
 
 function NavTab({ to, label, icon: Icon, end }: NavItem) {
   return (
-    <div className="flex min-w-0 flex-1 justify-center">
+    <div className="flex min-w-0 flex-1 basis-0 justify-center">
       <NavLink
         to={to}
         end={end}
         className={({ isActive }) =>
           cn(
-            CIRCLE_DIM,
-            'flex touch-manipulation flex-col items-center justify-center gap-0.5 rounded-full px-1.5 text-center text-[0.6rem] font-semibold leading-tight transition-colors',
+            ROUND_SLOT,
+            'touch-manipulation transition-[color,background-color,box-shadow] duration-200',
             isActive
-              ? 'bg-white text-zinc-900 shadow-sm'
-              : 'bg-transparent text-white/95 hover:text-white'
+              ? 'bg-white text-zinc-900 shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+              : 'bg-transparent text-white/90 hover:text-white'
           )
         }
       >
-        <Icon
-          className={ICON_CLASS}
-          strokeWidth={ICON_STROKE}
-          aria-hidden
-        />
-        <span className="w-full break-words px-0.5 leading-none">{label}</span>
+        <span className={cn(ICON_BOX, 'text-inherit')}>
+          <Icon className="size-5" strokeWidth={STROKE} aria-hidden />
+        </span>
+        <SlotLabel>{label}</SlotLabel>
       </NavLink>
     </div>
   )
@@ -66,7 +70,7 @@ export function BottomTabBar() {
   return (
     <>
       <div
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-2.5"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-3"
         style={{
           paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))',
         }}
@@ -77,32 +81,29 @@ export function BottomTabBar() {
         >
           <div
             className={cn(
-              'flex items-center justify-between gap-0.5 rounded-full px-1.5 py-2',
-              'bg-[#1f1f1f] shadow-2xl ring-1 ring-white/5'
+              'flex items-center justify-between gap-1 rounded-full py-2.5 px-0',
+              'bg-[#232323]/98 shadow-[0_10px_40px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.08] backdrop-blur-md'
             )}
           >
             <NavTab {...NAV_ITEMS[0]} />
             <NavTab {...NAV_ITEMS[1]} />
 
-            <div className="flex min-w-0 flex-1 justify-center">
+            <div className="flex min-w-0 flex-1 basis-0 justify-center">
               <button
                 type="button"
                 onClick={() => setCreateOpen(true)}
                 className={cn(
-                  CIRCLE_DIM,
-                  'flex flex-col items-center justify-center gap-0.5 rounded-full px-1.5 text-center text-[0.6rem] font-semibold leading-tight text-white shadow-md touch-manipulation transition active:scale-[0.98] motion-reduce:transform-none'
+                  ROUND_SLOT,
+                  'text-white touch-manipulation transition active:scale-[0.98] motion-reduce:transform-none',
+                  'shadow-[0_1px_3px_rgba(0,0,0,0.2)]'
                 )}
                 style={{ backgroundColor: TEAL }}
                 aria-label="פוסט חדש"
               >
-                <Plus
-                  className={ICON_CLASS}
-                  strokeWidth={ICON_STROKE}
-                  aria-hidden
-                />
-                <span className="w-full break-words px-0.5 leading-none">
-                  פוסט
+                <span className={cn(ICON_BOX, 'text-inherit')}>
+                  <Plus className="size-5" strokeWidth={STROKE} aria-hidden />
                 </span>
+                <SlotLabel>פוסט</SlotLabel>
               </button>
             </div>
 
