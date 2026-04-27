@@ -81,7 +81,7 @@ export function BottomTabBar() {
         >
           <div
             className={cn(
-              'flex items-center justify-between gap-1 rounded-full py-2.5 px-[10px]',
+              'flex items-center justify-between gap-1 rounded-full p-[5px]',
               'bg-[#232323]/98 shadow-[0_10px_40px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.08] backdrop-blur-md'
             )}
           >
