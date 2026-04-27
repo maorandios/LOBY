@@ -1,6 +1,6 @@
 import type { FeedPost } from '@/types/feed'
 
-export const BUILDING_NAME = 'בניין הרצל 12, תל אביב'
+export const BUILDING_NAME = 'קדושי סלוניקי 27, ירושלים'
 
 export const MOCK_POSTS: FeedPost[] = [
   {

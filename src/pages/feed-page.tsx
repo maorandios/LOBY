@@ -1,56 +1,52 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { FeedHeader } from '@/components/feed/feed-header'
-import { FilterChips } from '@/components/feed/filter-chips'
 import { PostCard } from '@/components/feed/post-card'
 import { BUILDING_NAME, MOCK_POSTS } from '@/data/feed-mock'
-import type { FeedFilterId, FeedPost, PostTypeHe } from '@/types/feed'
+import { cn } from '@/lib/utils'
 
-const FILTER_TO_TYPE: Partial<Record<FeedFilterId, PostTypeHe>> = {
-  דיווחים: 'דיווח',
-  הצבעות: 'הצבעה',
-  עדכונים: 'עדכון',
-  בקשות: 'בקשה',
-}
-
-function filterPosts(posts: FeedPost[], filter: FeedFilterId): FeedPost[] {
-  if (filter === 'הכל') return posts
-  const t = FILTER_TO_TYPE[filter]
-  if (!t) return posts
-  return posts.filter((p) => p.type === t)
-}
+const SCROLL_BLUR_PX = 12
 
 export function FeedPage() {
-  const [filter, setFilter] = useState<FeedFilterId>('הכל')
+  const [headerScrolled, setHeaderScrolled] = useState(false)
 
-  const visible = useMemo(
-    () => filterPosts(MOCK_POSTS, filter),
-    [filter]
-  )
+  useEffect(() => {
+    const onScroll = () => {
+      setHeaderScrolled(window.scrollY > SCROLL_BLUR_PX)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   return (
     <div className="min-h-svh bg-muted/35 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]">
-      <div className="sticky top-0 z-40 border-b border-border/60 bg-background/90 shadow-xs backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
+      <div
+        className={cn(
+          'sticky top-0 z-40 border-b border-border/60',
+          'transition-[backdrop-filter,background-color] duration-300 ease-out',
+          headerScrolled
+            ? 'backdrop-blur-xl bg-muted/25 supports-[backdrop-filter]:bg-muted/20'
+            : 'bg-muted/35 backdrop-blur-none'
+        )}
+      >
         <FeedHeader buildingName={BUILDING_NAME} />
-        <div className="px-4">
-          <FilterChips value={filter} onChange={setFilter} />
-        </div>
       </div>
 
       <main className="mx-auto max-w-lg px-3 py-4">
-        {visible.length === 0 ? (
+        {MOCK_POSTS.length === 0 ? (
           <div className="flex min-h-[45vh] flex-col items-center justify-center gap-2 px-4 text-center">
             <p className="text-base font-medium text-foreground">
               אין פריטים להצגה
             </p>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              נסו לבחור קטגוריה אחרת, או לנקות את הסינון ל־״הכל״.
+              עדיין אין פוסטים בפיד.
             </p>
           </div>
         ) : (
           <ul className="flex flex-col gap-4">
-            {visible.map((post) => (
+            {MOCK_POSTS.map((post) => (
               <li key={post.id}>
                 <PostCard post={post} />
               </li>
