@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 
-import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { FeedSkeleton } from '@/components/feed/feed-skeleton'
 import { FeedHeader } from '@/components/feed/feed-header'
 import { PostCard } from '@/components/feed/post-card'
@@ -233,8 +232,6 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
           )}
         </main>
       </div>
-
-      <BottomTabBar />
     </div>
   )
 }

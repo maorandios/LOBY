@@ -2,7 +2,6 @@ import { Building2, ChevronLeft, LogOut } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/auth/use-auth'
-import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Card,
@@ -82,7 +81,6 @@ export function ProfilePage() {
           <PushNotificationsPanel />
         </div>
       </main>
-      <BottomTabBar />
     </div>
   )
 }

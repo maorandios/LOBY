@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation, useNavigationType } from 'react-router-dom'
 import { useLayoutEffect, useRef } from 'react'
 
+import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { FeedRefreshProvider } from '@/context/feed-refresh-context'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { cn } from '@/lib/utils'
@@ -34,11 +35,14 @@ export function BuildingRequiredLayout() {
 
   return (
     <FeedRefreshProvider>
-      <div
-        key={pathKey}
-        className={cn('min-h-svh max-w-[100vw] overflow-x-clip', routeAnim)}
-      >
-        <Outlet />
+      <div className="relative min-h-svh w-full max-w-[100vw] overflow-x-clip">
+        <div
+          key={pathKey}
+          className={cn('min-h-svh max-w-[100vw] overflow-x-clip', routeAnim)}
+        >
+          <Outlet />
+        </div>
+        <BottomTabBar />
       </div>
     </FeedRefreshProvider>
   )

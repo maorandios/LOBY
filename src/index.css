@@ -150,35 +150,31 @@
 /*_route_transitions: light motion, GPU-friendly */
 @layer components {
   .route-enter-forward {
-    animation: loby-route-enter 255ms cubic-bezier(0.32, 0.72, 0.26, 1) both;
-    will-change: transform, opacity;
+    animation: loby-route-enter 200ms cubic-bezier(0.32, 0.72, 0.26, 1) both;
+    will-change: opacity;
   }
   .route-enter-pop {
-    animation: loby-route-back 255ms cubic-bezier(0.32, 0.72, 0.26, 1) both;
-    will-change: transform, opacity;
+    animation: loby-route-back 200ms cubic-bezier(0.32, 0.72, 0.26, 1) both;
+    will-change: opacity;
   }
 }
 
-/* Forward: enters from the trailing (visual “right”) edge; back: from the lead edge */
+/* Opacity-only: transform on an ancestor breaks position:fixed for the bottom tab bar */
 @keyframes loby-route-enter {
   from {
-    opacity: 0.82;
-    transform: translate3d(min(1.25rem, 6vw), 0, 0);
+    opacity: 0.94;
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes loby-route-back {
   from {
-    opacity: 0.82;
-    transform: translate3d(calc(-1 * min(1.1rem, 5.5vw)), 0, 0);
+    opacity: 0.94;
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
   }
 }
 

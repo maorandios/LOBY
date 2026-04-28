@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 
-import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { PostDetailSkeleton } from '@/components/feed/post-detail-skeleton'
 import { ProfileCornerLink } from '@/components/feed/feed-header'
 import { PostCard } from '@/components/feed/post-card'
@@ -170,7 +169,6 @@ export function PostDetailPage() {
           </div>
         ) : null}
       </div>
-      <BottomTabBar />
     </div>
   )
 }

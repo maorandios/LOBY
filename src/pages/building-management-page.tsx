@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Building2, Copy, Share2 } from 'lucide-react'
 
-import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { ProfileCornerLink } from '@/components/feed/feed-header'
 import {
   Button,
@@ -169,7 +168,6 @@ export function BuildingManagementPage() {
         <div className="mx-auto max-w-lg px-4 py-8">
           <p className="text-sm text-muted-foreground">טוען…</p>
         </div>
-        <BottomTabBar />
       </div>
     )
   }
@@ -195,7 +193,6 @@ export function BuildingManagementPage() {
             חזרה לפרופיל
           </Link>
         </main>
-        <BottomTabBar />
       </div>
     )
   }
@@ -378,7 +375,6 @@ export function BuildingManagementPage() {
           </ul>
         </section>
       </div>
-      <BottomTabBar />
     </div>
   )
 }

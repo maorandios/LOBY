@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 
 import { buttonVariants } from '@/components/ui/button'
-import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -26,7 +25,6 @@ export function PlaceholderPage({ title }: Props) {
           חזרה לפיד
         </Link>
       </div>
-      <BottomTabBar />
     </div>
   )
 }
