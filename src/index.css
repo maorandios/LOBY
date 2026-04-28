@@ -6,9 +6,8 @@
 
 @theme inline {
     --font-heading: var(--font-sans);
-    /* GSF has no Hebrew glyphs in the webfont CSS; Noto supplies Hebrew (0590–05FF). */
-    --font-sans:
-      "Google Sans Flex", "Noto Sans Hebrew", "Segoe UI", system-ui, sans-serif;
+    /* Rubik: Latin + Hebrew in one stack (linked in index.html). */
+    --font-sans: "Rubik", "Segoe UI", system-ui, -apple-system, sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -124,11 +123,9 @@
   * {
     @apply border-border outline-ring/50;
     }
-  /* Per-codepoint: Latin → Google Sans Flex; Hebrew → Noto Sans Hebrew (see font link in index.html). */
   html {
     font-family:
-      "Google Sans Flex",
-      "Noto Sans Hebrew",
+      "Rubik",
       "Segoe UI",
       system-ui,
       -apple-system,

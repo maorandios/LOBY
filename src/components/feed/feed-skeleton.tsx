@@ -5,7 +5,7 @@ function PostCardSkeleton() {
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 overflow-hidden rounded-2xl border border-border/50 bg-card/60 p-5',
+        'flex flex-col gap-3 overflow-hidden rounded-3xl border border-border/50 bg-white/20 p-5 dark:bg-card/20',
         'shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)]'
       )}
     >

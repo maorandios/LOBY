@@ -201,8 +201,8 @@ export function PostCard({
           <div className="flex w-full items-stretch gap-2">
             <Button
               type="button"
-              variant="secondary"
-              className="h-10 min-w-0 flex-1 rounded-full font-semibold shadow-none"
+              variant="ghost"
+              className="h-10 min-w-0 flex-1 rounded-full border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
               onClick={() => navigate(`/post/${post.id}`)}
             >
               תגובה
@@ -219,8 +219,8 @@ export function PostCard({
           <>
             <Button
               type="button"
-              variant="secondary"
-              className="h-10 flex-1 rounded-full gap-2 font-semibold shadow-none"
+              variant="ghost"
+              className="h-10 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
               onClick={() => navigate(`/post/${post.id}`)}
             >
               <MessageCircle className="size-4" aria-hidden />
