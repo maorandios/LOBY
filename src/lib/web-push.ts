@@ -11,6 +11,33 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray
 }
 
+/** iPhone / iPad / iPod (including iPadOS desktop mode). */
+export function isAppleMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent || ''
+  if (/iPad|iPhone|iPod/.test(ua)) return true
+  // iPad with iPadOS 13+ may report as MacIntel
+  return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+}
+
+/** PWA opened from Home Screen (required on iOS for push in practice). */
+export function isStandalonePwa(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    if (window.matchMedia?.('(display-mode: standalone)')?.matches) return true
+    if (window.matchMedia?.('(display-mode: fullscreen)')?.matches) return true
+  } catch {
+    /* ignore */
+  }
+  return Boolean(
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  )
+}
+
+/**
+ * Browser exposes Push API. On iPhone/iPad this is usually false in Safari’s tab;
+ * use the app from the Home Screen (iOS 16.4+).
+ */
 export function isWebPushSupported(): boolean {
   return (
     typeof window !== 'undefined' &&

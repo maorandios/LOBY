@@ -14,6 +14,7 @@ import { isSupabaseConfigured } from '@/lib/supabase'
 import {
   ensureServiceWorker,
   getVapidPublicKey,
+  isAppleMobileDevice,
   isWebPushSupported,
   loadPushSubscriptionState,
   subscribeAndSave,
@@ -23,6 +24,7 @@ import {
 type UiState =
   | 'loading'
   | 'unsupported'
+  | 'unsupported_ios'
   | 'no_supabase'
   | 'need_vapid'
   | 'no_building'
@@ -42,7 +44,7 @@ export function PushNotificationsPanel() {
       return
     }
     if (!isWebPushSupported()) {
-      setUi('unsupported')
+      setUi(isAppleMobileDevice() ? 'unsupported_ios' : 'unsupported')
       return
     }
     if (!getVapidPublicKey()) {
@@ -114,6 +116,32 @@ export function PushNotificationsPanel() {
         <CardContent className="flex items-center justify-center py-8 text-sm text-muted-foreground">
           <Loader2 className="size-5 animate-spin" aria-hidden />
         </CardContent>
+      </Card>
+    )
+  }
+
+  if (ui === 'unsupported_ios') {
+    return (
+      <Card className="border-border/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
+        <CardHeader className="text-right">
+          <CardTitle className="text-base">התראות דחיפה באייפון / אייפד</CardTitle>
+          <CardDescription className="space-y-3 text-pretty leading-relaxed">
+            <p>
+              באייפון ובאייפד, התראות דחיפה מ־Safari זמינות רק כשפותחים את האפליקציה{' '}
+              <span className="font-semibold text-foreground">מהמסך הבית</span>{' '}
+              (לא מלשונית רגילה בדפדפן).
+            </p>
+            <ol className="list-decimal list-inside space-y-2 text-start [padding-inline-start:0.25rem]">
+              <li>דורש iOS 16.4 ומעלה.</li>
+              <li>ב־Safari: לחצו על כפתור השיתוף ↗ והוסיפו «הוסף למסך הבית».</li>
+              <li>
+                פתחו את <span className="font-medium text-foreground">לובי</span> מהסמל
+                במסך הבית, לא מ־Safari הרגיל.
+              </li>
+              <li>כאן בפרופיל — הפעילו שוב את ההתראות.</li>
+            </ol>
+          </CardDescription>
+        </CardHeader>
       </Card>
     )
   }
