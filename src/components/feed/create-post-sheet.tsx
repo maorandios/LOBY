@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import type { Dialog } from '@base-ui/react/dialog'
+import { useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   BellRing,
@@ -8,16 +8,10 @@ import {
   Megaphone,
   MessageSquarePlus,
   ArrowRight,
+  X,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
 import { useFeedRefresh } from '@/context/feed-refresh-context'
 import { createPost } from '@/lib/feed-queries'
@@ -41,16 +35,12 @@ function PostImagePicker({
   inputId,
   onPick,
   onClear,
-  onBeforeOpenNativePicker,
-  onAfterNativePick,
 }: {
   previewUrl: string | null
   disabled?: boolean
   inputId: string
   onPick: (file: File) => void
   onClear: () => void
-  onBeforeOpenNativePicker?: () => void
-  onAfterNativePick?: () => void
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -64,14 +54,10 @@ function PostImagePicker({
         className="sr-only"
         accept="image/*"
         disabled={disabled}
-        onFocus={() => {
-          onBeforeOpenNativePicker?.()
-        }}
         onChange={(e) => {
           const f = e.target.files?.[0]
           if (f) onPick(f)
           e.target.value = ''
-          onAfterNativePick?.()
         }}
       />
       {!previewUrl ? (
@@ -80,10 +66,6 @@ function PostImagePicker({
           variant="outline"
           className="h-11 rounded-xl font-medium"
           disabled={disabled}
-          onPointerDownCapture={() => {
-            if (disabled) return
-            onBeforeOpenNativePicker?.()
-          }}
           onClick={() => document.getElementById(inputId)?.click()}
         >
           צילום או העלאה מתמונות
@@ -126,50 +108,11 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
 
-  /** While iOS opens camera/album sheet, Dialog may try to dismiss (focus/backdrop). Ignore until picker ends. */
-  const nativePickerUnlockTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
-    null
-  )
-  const nativePickerSessionRef = useRef(false)
-
-  const beginNativePickerSession = useCallback(() => {
-    nativePickerSessionRef.current = true
-    if (nativePickerUnlockTimerRef.current != null) {
-      window.clearTimeout(nativePickerUnlockTimerRef.current)
-    }
-    nativePickerUnlockTimerRef.current = window.setTimeout(() => {
-      nativePickerSessionRef.current = false
-      nativePickerUnlockTimerRef.current = null
-    }, 90_000)
-  }, [])
-
-  const endNativePickerSession = useCallback(() => {
-    nativePickerSessionRef.current = false
-    if (nativePickerUnlockTimerRef.current != null) {
-      window.clearTimeout(nativePickerUnlockTimerRef.current)
-      nativePickerUnlockTimerRef.current = null
-    }
-  }, [])
-
   useEffect(() => {
     return () => {
       if (imagePreview) URL.revokeObjectURL(imagePreview)
     }
   }, [imagePreview])
-
-  useEffect(() => {
-    if (!open) return
-    function onVisibility() {
-      if (document.visibilityState !== 'visible') return
-      window.setTimeout(() => {
-        endNativePickerSession()
-      }, 400)
-    }
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibility)
-    }
-  }, [open, endNativePickerSession])
 
   function clearImage() {
     if (imagePreview) URL.revokeObjectURL(imagePreview)
@@ -207,33 +150,34 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   function handleOpenChange(next: boolean) {
     if (!next) {
-      endNativePickerSession()
       resetForm()
     }
     onOpenChange(next)
   }
 
-  function handleSheetOpenChange(
-    nextOpen: boolean,
-    eventDetails: Dialog.Root.ChangeEventDetails
-  ) {
-    if (!nextOpen) {
-      const reason = eventDetails.reason
-      const explicitDismiss =
-        reason === 'close-press' || reason === 'escape-key'
+  const handleOpenChangeRef = useRef(handleOpenChange)
+  handleOpenChangeRef.current = handleOpenChange
 
-      if (nativePickerSessionRef.current && !explicitDismiss) {
-        eventDetails.cancel()
-        return
-      }
+  useEffect(() => {
+    if (!open) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [open])
 
-      if (!nativePickerSessionRef.current && reason === 'focus-out') {
-        eventDetails.cancel()
-        return
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        handleOpenChangeRef.current(false)
       }
     }
-    handleOpenChange(nextOpen)
-  }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open])
 
   async function submit(kind: Exclude<Mode, 'menu'>) {
     setError(null)
@@ -335,12 +279,14 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   const menu = (
     <>
-      <SheetHeader className="px-4 pb-2 text-start">
-        <SheetTitle className="text-lg">יצירת פריט חדש</SheetTitle>
-        <SheetDescription className="text-start">
+      <div className="flex flex-col gap-0.5 p-4 pb-2 text-start">
+        <h2 className="font-heading text-lg font-medium text-foreground">
+          יצירת פריט חדש
+        </h2>
+        <p className="text-sm text-muted-foreground text-start">
           בחרו סוג — יש למלא כותרת ותוכן לפי הסוג
-        </SheetDescription>
-      </SheetHeader>
+        </p>
+      </div>
       <Separator />
       <div className="flex flex-col gap-2 px-3 py-3">
         <Button
@@ -445,16 +391,16 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
       >
         <ArrowRight className="size-5" aria-hidden />
       </Button>
-      <SheetTitle className="text-lg">{label}</SheetTitle>
+      <h2 className="font-heading text-lg font-medium text-foreground">{label}</h2>
     </div>
   )
 
   const formReport = (
     <>
       {formHeader('דיווח חדש')}
-      <SheetDescription className="px-4 pb-3 text-start">
+      <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
         כותרת קצרה ותיאור
-      </SheetDescription>
+      </p>
       <Separator />
       <div className="flex flex-col gap-3 px-4 py-4 text-start">
         <label className="text-sm font-medium text-foreground">כותרת</label>
@@ -479,8 +425,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           disabled={submitting}
           onPick={handleImagePick}
           onClear={clearImage}
-          onBeforeOpenNativePicker={beginNativePickerSession}
-          onAfterNativePick={endNativePickerSession}
         />
         {error ? (
           <p className="text-sm text-destructive" role="alert">
@@ -502,9 +446,9 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   const formUpdate = (
     <>
       {formHeader('עדכון חדש')}
-      <SheetDescription className="px-4 pb-3 text-start">
+      <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
         הודעה לכל הדיירים
-      </SheetDescription>
+      </p>
       <Separator />
       <div className="flex flex-col gap-3 px-4 py-4 text-start">
         <label className="text-sm font-medium text-foreground">כותרת</label>
@@ -527,8 +471,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           disabled={submitting}
           onPick={handleImagePick}
           onClear={clearImage}
-          onBeforeOpenNativePicker={beginNativePickerSession}
-          onAfterNativePick={endNativePickerSession}
         />
         {error ? (
           <p className="text-sm text-destructive" role="alert">
@@ -567,8 +509,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           disabled={submitting}
           onPick={handleImagePick}
           onClear={clearImage}
-          onBeforeOpenNativePicker={beginNativePickerSession}
-          onAfterNativePick={endNativePickerSession}
         />
         {error ? (
           <p className="text-sm text-destructive" role="alert">
@@ -590,9 +530,9 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   const formPoll = (
     <>
       {formHeader('הצבעה חדשה')}
-      <SheetDescription className="px-4 pb-3 text-start">
+      <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
         נוסח השאלה ולפחות שתי אפשרויות
-      </SheetDescription>
+      </p>
       <Separator />
       <div className="flex flex-col gap-3 px-4 py-4 text-start">
         <label className="text-sm font-medium text-foreground">שאלה / כותרת</label>
@@ -615,8 +555,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           disabled={submitting}
           onPick={handleImagePick}
           onClear={clearImage}
-          onBeforeOpenNativePicker={beginNativePickerSession}
-          onAfterNativePick={endNativePickerSession}
         />
         <p className="text-sm font-medium text-foreground">אפשרויות</p>
         <div className="flex flex-col gap-2">
@@ -660,22 +598,44 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     </>
   )
 
-  return (
-    <Sheet
-      open={open}
-      onOpenChange={handleSheetOpenChange}
-      disablePointerDismissal
-    >
-      <SheetContent
-        side="bottom"
-        className="max-h-[90vh] overflow-y-auto rounded-t-2xl px-0 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+  if (!open) return null
+
+  return createPortal(
+    <div className="fixed inset-0 z-[210] flex flex-col justify-end">
+      <button
+        type="button"
+        aria-label="סגירה"
+        className="min-h-[18vh] w-full shrink-0 cursor-default border-0 bg-black/40 touch-manipulation"
+        onClick={() => handleOpenChange(false)}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="יצירת פריט חדש"
+        dir="rtl"
+        className={cn(
+          'relative max-h-[min(90vh,100dvh)] w-full shrink-0 overflow-y-auto rounded-t-2xl border-t border-border',
+          'bg-popover pb-[calc(1rem+env(safe-area-inset-bottom,0px))] text-sm text-popover-foreground shadow-lg'
+        )}
       >
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="absolute top-3 end-3 z-10 rounded-full"
+          onClick={() => handleOpenChange(false)}
+          aria-label="סגירה"
+        >
+          <X className="size-4" aria-hidden />
+          <span className="sr-only">סגירה</span>
+        </Button>
         {mode === 'menu' && menu}
         {mode === 'report' && formReport}
         {mode === 'update' && formUpdate}
         {mode === 'request' && formRequest}
         {mode === 'poll' && formPoll}
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>,
+    document.body
   )
 }
