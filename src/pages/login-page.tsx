@@ -1,12 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { AuthScreenShell } from '@/components/auth/auth-screen-shell'
 import { Button } from '@/components/ui/button'
-import { stashPostAuthRedirect } from '@/lib/post-auth-redirect'
+import { consumePostAuthRedirect, stashPostAuthRedirect } from '@/lib/post-auth-redirect'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 
-type Step = 'form' | 'sent'
+type Step = 'form' | 'code'
 
 /** Explicit hex (no oklch) — some mobile WebViews render token/opacity utilities as solid red blocks. */
 const calloutWarningClass =
@@ -14,6 +14,11 @@ const calloutWarningClass =
 
 const calloutErrorClass =
   'rounded-xl border border-[#ef4444] bg-[#fef2f2] px-3 py-2 text-right text-sm text-[#991b1b] shadow-sm [html:not(:lang(he))]:text-left'
+
+const otpInputClass =
+  'h-12 w-full rounded-xl border border-[#d4d4d8] bg-white px-3 text-center text-xl font-semibold tracking-[0.35em] text-[#18181b] outline-none transition-[box-shadow,border-color] placeholder:tracking-normal placeholder:text-[#71717a] focus-visible:border-[#a1a1aa] focus-visible:ring-2 focus-visible:ring-[#d4d4d8] disabled:cursor-not-allowed disabled:opacity-50'
+
+const OTP_LENGTH = 8
 
 function isRateLimitErrorMessage(message: string): boolean {
   const m = message.toLowerCase()
@@ -29,6 +34,17 @@ function isRateLimitErrorMessage(message: string): boolean {
 
 function hebrewAuthError(message: string): string {
   const m = message.toLowerCase()
+  if (
+    m.includes('otp') ||
+    m.includes('token') ||
+    m.includes('invalid') ||
+    m.includes('otp_expired') ||
+    m.includes('expired')
+  ) {
+    if (m.includes('expired'))
+      return 'פג התוקף של הקוד. נסו לקבל קוד חדש או בקשו שליחה מחדש.'
+    return 'הקוד שגוי. בדקו שהעתקתם את כל הספרות מהמייל והזינו שוב.'
+  }
   if (m.includes('invalid login credentials')) {
     return 'ההתחברות נכשלה. נסו שוב.'
   }
@@ -41,7 +57,12 @@ function hebrewAuthError(message: string): string {
   return message || 'משהו השתבש. נסו שוב.'
 }
 
+function sanitizeOtp(raw: string): string {
+  return raw.replace(/\D/g, '').slice(0, OTP_LENGTH)
+}
+
 export function LoginPage() {
+  const navigate = useNavigate()
   const [search] = useSearchParams()
 
   useEffect(() => {
@@ -54,10 +75,26 @@ export function LoginPage() {
   const configured = isSupabaseConfigured()
   const [step, setStep] = useState<Step>('form')
   const [email, setEmail] = useState('')
+  const [otpCode, setOtpCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function onSubmit(e: FormEvent) {
+  async function sendLoginEmail(addr: string): Promise<boolean> {
+    const origin = window.location.origin
+    const { error: signError } = await supabase.auth.signInWithOtp({
+      email: addr.trim(),
+      options: {
+        emailRedirectTo: `${origin}/auth/callback`,
+      },
+    })
+    if (signError) {
+      setError(hebrewAuthError(signError.message))
+      return false
+    }
+    return true
+  }
+
+  async function onSubmitEmail(e: FormEvent) {
     e.preventDefault()
     setError(null)
     const trimmed = email.trim()
@@ -69,18 +106,57 @@ export function LoginPage() {
 
     setLoading(true)
     try {
-      const origin = window.location.origin
-      const { error: signError } = await supabase.auth.signInWithOtp({
-        email: trimmed,
-        options: {
-          emailRedirectTo: `${origin}/auth/callback`,
-        },
+      const ok = await sendLoginEmail(trimmed)
+      if (!ok) return
+      setOtpCode('')
+      setStep('code')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function onSubmitCode(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    const trimmedEmail = email.trim()
+    const code = sanitizeOtp(otpCode)
+    if (!trimmedEmail) {
+      setError('חסר מייל — חזרו לשלב הקודם.')
+      return
+    }
+    if (code.length < 6) {
+      setError('הזינו את הקוד מהמייל — לרוב 6 ספרות.')
+      return
+    }
+    if (!configured) return
+
+    setLoading(true)
+    try {
+      const { data, error: verifyErr } = await supabase.auth.verifyOtp({
+        email: trimmedEmail,
+        token: code,
+        type: 'email',
       })
-      if (signError) {
-        setError(hebrewAuthError(signError.message))
+      if (verifyErr) {
+        setError(hebrewAuthError(verifyErr.message))
         return
       }
-      setStep('sent')
+      if (data.session) {
+        const dest = consumePostAuthRedirect()
+        navigate(dest, { replace: true })
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function resendCode() {
+    const trimmed = email.trim()
+    if (!trimmed) return
+    setError(null)
+    setLoading(true)
+    try {
+      await sendLoginEmail(trimmed)
     } finally {
       setLoading(false)
     }
@@ -89,27 +165,85 @@ export function LoginPage() {
   function backToForm() {
     setStep('form')
     setError(null)
+    setOtpCode('')
   }
 
-  if (step === 'sent') {
+  function onOtpPaste(e: { preventDefault: () => void; clipboardData: { getData: (t: string) => string } }) {
+    const pasted = sanitizeOtp(e.clipboardData.getData('text/plain'))
+    if (pasted) {
+      e.preventDefault()
+      setOtpCode(pasted)
+    }
+  }
+
+  if (step === 'code') {
+    const destEmail = email.trim()
     return (
       <AuthScreenShell>
         <header className="flex flex-col gap-2 text-right">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            בדקו את המייל שלכם
+            הזינו את הקוד מהמייל
           </h1>
           <p className="text-base leading-relaxed text-muted-foreground">
-            שלחנו לכם קישור כניסה. לחצו עליו כדי להמשיך לאפליקציה.
+            שלחנו קוד חד־פעמי לכתובת{' '}
+            <span className="font-medium text-foreground" dir="ltr">
+              {destEmail}
+            </span>
+            . הדביקו או הקלידו את הספרות למטה באותו דפדפן — כך ההתחברות תישמר גם אם
+            פתחתם מהמסך הבית.
           </p>
         </header>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 w-full touch-manipulation text-base"
-          onClick={backToForm}
-        >
-          חזרה להתחברות
-        </Button>
+
+        <form onSubmit={onSubmitCode} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2 text-right">
+            <label htmlFor="auth-otp" className="text-sm font-medium text-foreground">
+              קוד מהמייל
+            </label>
+            <input
+              id="auth-otp"
+              name="otp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              dir="ltr"
+              maxLength={OTP_LENGTH}
+              placeholder="למשל ·····"
+              value={otpCode}
+              onPaste={onOtpPaste}
+              onChange={(e) => setOtpCode(sanitizeOtp(e.target.value))}
+              disabled={loading}
+              className={otpInputClass}
+            />
+          </div>
+
+          {error ? (
+            <p className={calloutErrorClass} role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="h-11 w-full touch-manipulation text-base font-semibold"
+          >
+            {loading ? 'בודקים…' : 'כניסה'}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading}
+            className="h-11 w-full touch-manipulation text-base"
+            onClick={() => void resendCode()}
+          >
+            שליחת קוד מחדש
+          </Button>
+
+          <Button type="button" variant="ghost" disabled={loading} onClick={backToForm}>
+            שינוי כתובת המייל
+          </Button>
+        </form>
       </AuthScreenShell>
     )
   }
@@ -121,7 +255,7 @@ export function LoginPage() {
           כניסה למערכת
         </h1>
         <p className="text-base leading-relaxed text-muted-foreground">
-          הזינו מייל ונשלח לכם קישור כניסה מאובטח
+          הזינו מייל ונשלח לכם קוד חד־פעמי להקלדה במסך הבא
         </p>
       </header>
 
@@ -145,12 +279,15 @@ export function LoginPage() {
               </span>
             </li>
             <li>שמרו, ואז Deploy מחדש את האתר (Redeploy).</li>
-            <li>ב־Supabase: הוסיפו את כתובת האתר שלכם תחת Redirect URLs (כולל /auth/callback).</li>
+            <li>
+              ב־Supabase: Authentication → URL configuration — הוסיפו את כתובת האתר שלכם תחת Redirect
+              URLs (כולל <span className="font-mono">/auth/callback</span>) לשימוש במייל.
+            </li>
           </ul>
         </div>
       ) : null}
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <form onSubmit={onSubmitEmail} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 text-right">
           <label htmlFor="auth-email" className="text-sm font-medium text-foreground">
             דוא״ל
@@ -179,9 +316,9 @@ export function LoginPage() {
         <Button
           type="submit"
           disabled={loading || !configured}
-          className="h-11 w-full touch-manipulation text-base"
+          className="h-11 w-full touch-manipulation text-base font-semibold"
         >
-          {loading ? 'שולחים…' : 'שלחו לי קישור כניסה'}
+          {loading ? 'שולחים…' : 'שלחו לי קוד בהודעה'}
         </Button>
       </form>
     </AuthScreenShell>

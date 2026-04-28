@@ -1,0 +1,13 @@
+Why there is no code in the email
+---------------------------------
+Supabase sends the email. The default "Magic link" template usually only shows a button/link.
+Until you add {{ .Token }} to that template, users will not see the 6-digit code in the inbox.
+
+What to do
+----------
+1. Supabase Dashboard → Authentication → Email Templates
+2. Open "Magic link" (not Confirm signup)
+3. Paste the contents of magic-link-html-for-dashboard.html into the body (or add one line with {{ .Token }} in large text)
+4. Save. Send a test from the login page.
+
+Variable reference: https://supabase.com/docs/guides/auth/auth-email-templates
