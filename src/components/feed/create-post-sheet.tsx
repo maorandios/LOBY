@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import type { Dialog } from '@base-ui/react/dialog'
 import { useNavigate } from 'react-router-dom'
 import {
   BellRing,
@@ -156,6 +157,18 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   function handleOpenChange(next: boolean) {
     if (!next) resetForm()
     onOpenChange(next)
+  }
+
+  /** Camera / library focus leaves the sheet temporarily; Base UI would close on `focus-out`. */
+  function handleSheetOpenChange(
+    nextOpen: boolean,
+    eventDetails: Dialog.Root.ChangeEventDetails
+  ) {
+    if (!nextOpen && eventDetails.reason === 'focus-out') {
+      eventDetails.cancel()
+      return
+    }
+    handleOpenChange(nextOpen)
   }
 
   async function submit(kind: Exclude<Mode, 'menu'>) {
@@ -576,7 +589,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   )
 
   return (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
+    <Sheet open={open} onOpenChange={handleSheetOpenChange}>
       <SheetContent
         side="bottom"
         className="max-h-[90vh] overflow-y-auto rounded-t-2xl px-0 pb-[calc(1rem+env(safe-area-inset-bottom))]"
