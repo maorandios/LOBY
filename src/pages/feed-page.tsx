@@ -44,7 +44,7 @@ function emptyHint(mode: FeedTabMode): string {
 
 export function FeedPage({ mode = 'all' }: FeedPageProps) {
   const location = useLocation()
-  const { member, isAdmin } = useBuildingMembership()
+  const { member, isAdmin, loading: membershipLoading } = useBuildingMembership()
   const { feedVersion } = useFeedRefresh()
   const newInviteCode = (location.state as FeedLocationState | null)?.newInviteCode
   const inviteUrl =
@@ -75,7 +75,8 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
       const silent = options?.silent === true
       if (!bid) {
         setPosts([])
-        if (!silent) setLoading(false)
+        // Avoid empty-state flash before building_id exists (membership still hydrating).
+        if (!silent && !membershipLoading) setLoading(false)
         return
       }
       if (!silent) {
@@ -96,7 +97,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
         if (!silent) setLoading(false)
       }
     },
-    [member?.building_id]
+    [member?.building_id, membershipLoading]
   )
 
   useEffect(() => {
@@ -205,7 +206,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
                 נסו שוב
               </Button>
             </div>
-          ) : loading ? (
+          ) : membershipLoading || loading ? (
             <FeedSkeleton count={4} />
           ) : filtered.length === 0 ? (
             <div className="flex min-h-[45vh] flex-col items-center justify-center gap-2 px-4 text-center">

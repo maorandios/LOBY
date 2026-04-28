@@ -18,7 +18,7 @@ import type { FeedPost } from '@/types/feed'
 import type { PostComment } from '@/types/feed'
 
 const fieldClass =
-  'flex min-h-10 w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55'
+  'flex min-h-10 w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-base outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55'
 
 export function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>()
