@@ -14,6 +14,7 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useFeedRefresh } from '@/context/feed-refresh-context'
+import { dlog } from '@/lib/debug-log'
 import { createPost } from '@/lib/feed-queries'
 import { uploadPostImage } from '@/lib/post-image-upload'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
@@ -109,9 +110,13 @@ function PostImagePicker({
         className="sr-only text-base"
         accept="image/*"
         disabled={disabled}
-        onClick={() => onPickerInvoked()}
+        onClick={() => {
+          dlog('input:click')
+          onPickerInvoked()
+        }}
         onChange={(e) => {
           const f = e.target.files?.[0]
+          dlog(`input:change file=${f ? `${f.name}/${f.size}b` : 'none'}`)
           if (f) onPick(f)
           e.target.value = ''
           onPickerSettled()
@@ -120,7 +125,10 @@ function PostImagePicker({
       {!previewUrl ? (
         <label
           htmlFor={inputId}
-          onPointerDown={() => onPickerInvoked()}
+          onPointerDown={() => {
+            dlog('label:pointerdown')
+            onPickerInvoked()
+          }}
           className={cn(
             buttonVariants({ variant: 'outline' }),
             'h-11 w-full cursor-pointer justify-center rounded-xl font-medium',
@@ -177,6 +185,21 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   )
 
   useEffect(() => {
+    dlog(`composer: open=${open} mode=${mode}`)
+  }, [open, mode])
+
+  useEffect(() => {
+    dlog('composer:mount')
+    if (initialDraft && (initialDraft.title || initialDraft.body)) {
+      dlog(
+        `draft:restored mode=${initialDraft.mode} title=${initialDraft.title.length}c body=${initialDraft.body.length}c`
+      )
+    }
+    return () => dlog('composer:unmount')
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only marker
+  }, [])
+
+  useEffect(() => {
     if (!open) return
     saveDraft({ mode, title, body, pollOptions })
   }, [open, mode, title, body, pollOptions])
@@ -193,15 +216,15 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
    */
   const pickerGuardUntilRef = useRef(0)
   const markPickerInvoked = () => {
-    /* Long enough to cover camera capture + confirm */
     pickerGuardUntilRef.current = Date.now() + 30_000
+    dlog('pickerGuard: invoked +30s')
   }
   const markPickerSettled = () => {
-    /* Keep guard for 1.5s after change/cancel to absorb synthetic taps */
     pickerGuardUntilRef.current = Math.max(
       pickerGuardUntilRef.current,
       Date.now() + 1500
     )
+    dlog('pickerGuard: settled +1.5s')
   }
   const isPickerGuardActive = () => Date.now() < pickerGuardUntilRef.current
 
@@ -246,6 +269,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   }
 
   function handleOpenChange(next: boolean) {
+    dlog(`composer:onOpenChange next=${next}`)
     if (!next) {
       resetForm()
     }
@@ -254,7 +278,11 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   /** Used by overlay UI close affordances; ignored while photo picker is in flight. */
   function handleUserClose() {
-    if (isPickerGuardActive()) return
+    if (isPickerGuardActive()) {
+      dlog('composer:close blocked (pickerGuard)')
+      return
+    }
+    dlog('composer:close (user)')
     handleOpenChange(false)
   }
 

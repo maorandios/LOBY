@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from 'react'
 
+import { dlog } from '@/lib/debug-log'
+
 /** Survives same-tab reload — WKWebView can refresh the SPA when returning from Photos/Camera. */
 const STORAGE_KEY_OPEN = 'loby:v1:create_post_open'
 
@@ -36,6 +38,7 @@ export function CreatePostComposerProvider({ children }: { children: ReactNode }
     } catch {
       /* private mode etc. */
     }
+    dlog(`composer-context: open=${open}`)
   }, [open])
 
   useLayoutEffect(() => {

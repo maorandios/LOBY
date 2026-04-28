@@ -1,10 +1,11 @@
 import { Navigate, Outlet, useLocation, useNavigationType } from 'react-router-dom'
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 
 import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { CreatePostComposerProvider } from '@/context/create-post-composer-context'
 import { FeedRefreshProvider } from '@/context/feed-refresh-context'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
+import { dlog } from '@/lib/debug-log'
 import { cn } from '@/lib/utils'
 
 import { OnboardingLoadingPage } from '@/pages/onboarding-loading-page'
@@ -25,6 +26,10 @@ export function BuildingRequiredLayout() {
   useLayoutEffect(() => {
     prevPathKey.current = pathKey
   }, [pathKey])
+
+  useEffect(() => {
+    dlog(`route:${location.pathname}${location.search} navType=${navType}`)
+  }, [location.pathname, location.search, navType])
 
   if (loading) {
     return <OnboardingLoadingPage />
