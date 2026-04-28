@@ -1,6 +1,6 @@
 import {
-  BarChart2,
-  Handshake,
+  ChartColumnDecreasing,
+  HeartHandshake,
   Info,
   Megaphone,
   type LucideIcon,
@@ -12,8 +12,8 @@ import { cn } from '@/lib/utils'
 export const postTypeLucideIcon: Record<PostTypeHe, LucideIcon> = {
   דיווח: Info,
   עדכון: Megaphone,
-  הצבעה: BarChart2,
-  בקשה: Handshake,
+  הצבעה: ChartColumnDecreasing,
+  בקשה: HeartHandshake,
 }
 
 export function cardAccentByType(type: PostTypeHe) {
@@ -34,11 +34,11 @@ export function typeBadgeClass(type: PostTypeHe) {
     case 'דיווח':
       return 'border border-[#FF0019] bg-[#FFDEE5] text-[#FF0019]'
     case 'הצבעה':
-      return 'bg-indigo-500/15 text-indigo-950 dark:bg-indigo-400/20 dark:text-indigo-50'
+      return 'border border-[#FF8800] bg-[#FFF2E4] text-[#FF8800]'
     case 'עדכון':
-      return 'bg-neutral-500/12 text-neutral-900 dark:bg-neutral-400/15 dark:text-neutral-100'
+      return 'border border-[#00766C] bg-[#E4FFF6] text-[#00766C]'
     case 'בקשה':
-      return 'bg-emerald-500/15 text-emerald-950 dark:bg-emerald-400/18 dark:text-emerald-50'
+      return 'border border-[#9000FF] bg-[#F5E8FF] text-[#9000FF]'
     default:
       return ''
   }
