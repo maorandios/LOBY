@@ -42,7 +42,7 @@ function emptyHint(mode: FeedTabMode): string {
 
 export function FeedPage({ mode = 'all' }: FeedPageProps) {
   const location = useLocation()
-  const { member } = useBuildingMembership()
+  const { member, isAdmin } = useBuildingMembership()
   const { feedVersion } = useFeedRefresh()
   const newInviteCode = (location.state as FeedLocationState | null)?.newInviteCode
   const inviteUrl =
@@ -117,7 +117,10 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
   )
 
   return (
-    <div className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]">
+    <div
+      dir="rtl"
+      className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]"
+    >
       <div
         className={cn(
           'sticky top-0 z-40 pt-[env(safe-area-inset-top)]',
@@ -172,7 +175,12 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
           <ul className="flex flex-col gap-4">
             {filtered.map((post) => (
               <li key={post.id}>
-                <PostCard post={post} onPollVote={handlePollVote} />
+                <PostCard
+                  post={post}
+                  onPollVote={handlePollVote}
+                  isAdmin={isAdmin}
+                  onAdminSuccess={() => void loadFeed()}
+                />
               </li>
             ))}
           </ul>

@@ -17,6 +17,7 @@ export type PostRow = {
   image_url: string | null
   poll_cancelled: boolean
   poll_closed: boolean
+  pinned: boolean
   created_at: string
 }
 
@@ -179,6 +180,7 @@ export async function fetchFeedPostsForBuilding(
         image_url,
         poll_cancelled,
         poll_closed,
+        pinned,
         created_at,
         comments(count),
         poll_options(
@@ -190,6 +192,7 @@ export async function fetchFeedPostsForBuilding(
       `
       )
       .eq('building_id', buildingId)
+      .order('pinned', { ascending: false })
       .order('created_at', { ascending: false }),
   ])
 
@@ -246,6 +249,7 @@ function rowToFeedPost(
     id: row.id,
     type: postTypeDbToHe(row.type),
     status: postStatusDbToHe(row.status),
+    pinned: Boolean((row as { pinned?: boolean }).pinned),
     relativeTime: rel,
     title: row.title,
     author: displayName(memberMap, row.author_id),
@@ -287,6 +291,7 @@ export async function fetchPostById(postId: string): Promise<FeedPost | null> {
       image_url,
       poll_cancelled,
       poll_closed,
+      pinned,
       created_at,
       comments(count),
       poll_options(
@@ -540,6 +545,60 @@ export async function createPost(payload: CreatePostPayload): Promise<{
     return { id: null, error: error?.message ?? 'יצירת פוסט נכשלה' }
   }
   return { id: ins.id as string }
+}
+
+async function adminPostResult(
+  result: { error: Error | null }
+): Promise<{ ok: boolean; error?: string }> {
+  if (result.error) {
+    console.error('[LOBY] admin post action', result.error)
+    return { ok: false, error: result.error.message }
+  }
+  return { ok: true }
+}
+
+/** Report workflow — building admins only (RLS). */
+export async function adminUpdateReportPostStatus(
+  postId: string,
+  status: Extract<PostStatusDb, 'open' | 'in_progress' | 'closed'>
+): Promise<{ ok: boolean; error?: string }> {
+  return adminPostResult(
+    await supabase.from('posts').update({ status }).eq('id', postId)
+  )
+}
+
+/** Pin / unpin — building admins only (RLS). */
+export async function adminSetPostPinned(
+  postId: string,
+  pinned: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  return adminPostResult(
+    await supabase.from('posts').update({ pinned }).eq('id', postId)
+  )
+}
+
+/** Poll decided — building admins only (RLS). */
+export async function adminMarkPollDecided(
+  postId: string
+): Promise<{ ok: boolean; error?: string }> {
+  return adminPostResult(
+    await supabase
+      .from('posts')
+      .update({
+        status: 'decided',
+        poll_closed: true,
+      })
+      .eq('id', postId)
+  )
+}
+
+/** Delete post — building admins only (RLS). Cascades comments / poll data. */
+export async function adminDeletePost(
+  postId: string
+): Promise<{ ok: boolean; error?: string }> {
+  return adminPostResult(
+    await supabase.from('posts').delete().eq('id', postId)
+  )
 }
 
 /** Bump comment count hint on feed posts after adding a comment (client-side). */

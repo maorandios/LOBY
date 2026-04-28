@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle } from 'lucide-react'
+import { Heart, MessageCircle, Settings2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
 import { PollBlock } from '@/components/feed/poll-block'
 import {
   cardAccentByType,
@@ -23,10 +24,21 @@ type Props = {
     postId: string,
     optionId: string
   ) => Promise<{ ok: boolean; message?: string }>
+  isAdmin?: boolean
+  onAdminSuccess?: () => void
+  /** When set, after delete the parent runs this (e.g. navigate away). */
+  onAdminDelete?: () => void
 }
 
-export function PostCard({ post, onPollVote }: Props) {
+export function PostCard({
+  post,
+  onPollVote,
+  isAdmin,
+  onAdminSuccess,
+  onAdminDelete,
+}: Props) {
   const navigate = useNavigate()
+  const [adminSheetOpen, setAdminSheetOpen] = useState(false)
   const isPoll = isPollPost(post)
   const isUpdate = post.type === 'עדכון'
   const isReport = post.type === 'דיווח'
@@ -47,6 +59,37 @@ export function PostCard({ post, onPollVote }: Props) {
       <TypeIcon className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
       {postTypeChipLabel(post.type)}
     </span>
+  )
+
+  const metaEnd = (
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+      {post.pinned ? (
+        <span
+          className={cn(
+            CHIP,
+            'border border-primary/25 bg-primary/10 text-primary'
+          )}
+        >
+          נעוץ
+        </span>
+      ) : null}
+      {typeChip}
+      {isAdmin ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          className="shrink-0 rounded-full border-border/80"
+          aria-label="פעולות ניהול פוסט"
+          onClick={(e) => {
+            e.stopPropagation()
+            setAdminSheetOpen(true)
+          }}
+        >
+          <Settings2 className="size-4" aria-hidden />
+        </Button>
+      ) : null}
+    </div>
   )
 
   const residentMeta = (
@@ -80,7 +123,7 @@ export function PostCard({ post, onPollVote }: Props) {
         <p className="min-w-0 flex-1 text-start text-[0.8rem] leading-snug text-foreground">
           {residentMeta}
         </p>
-        {typeChip}
+        {metaEnd}
       </div>
 
       <div className="mt-4 flex flex-col gap-3">
@@ -201,6 +244,16 @@ export function PostCard({ post, onPollVote }: Props) {
           </>
         )}
       </div>
+
+      {isAdmin ? (
+        <PostAdminSheet
+          post={post}
+          open={adminSheetOpen}
+          onOpenChange={setAdminSheetOpen}
+          onSuccess={onAdminSuccess ?? (() => {})}
+          onDeleted={onAdminDelete}
+        />
+      ) : null}
     </article>
   )
 }

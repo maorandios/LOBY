@@ -34,6 +34,8 @@ export interface FeedPostBase {
   id: string
   type: PostTypeHe
   status: PostStatusHe
+  /** Pinned posts sort first in the feed */
+  pinned: boolean
   /** Preformatted relative time for mock display */
   relativeTime: string
   title: string

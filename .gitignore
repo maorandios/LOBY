@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+
+# Supabase CLI local cache
+supabase/.temp/
+
 .env
 .env.*
 !.env.example

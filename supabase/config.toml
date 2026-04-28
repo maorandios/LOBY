@@ -1,0 +1,5 @@
+# Minimal Supabase CLI config — extend as needed locally.
+
+[functions.notify-push]
+# Internal hook from Postgres pg_net sends x-push-hook-secret; JWT verification would block dispatcher.
+verify_jwt = false

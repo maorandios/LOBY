@@ -48,10 +48,17 @@ export function useBuildingMembership() {
     }
   }, [session, tick])
 
+  const currentBuildingId = member?.building_id ?? null
+  const currentUserRole = member?.role ?? null
+  const isAdmin = member?.role === 'admin'
+
   return {
     member,
     loading,
     refetch,
     hasBuilding: Boolean(member),
+    currentBuildingId,
+    currentUserRole,
+    isAdmin,
   }
 }

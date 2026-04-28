@@ -1,9 +1,9 @@
-import { LogOut } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Building2, ChevronLeft, LogOut } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/auth/use-auth'
 import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -11,9 +11,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { PushNotificationsPanel } from '@/components/profile/push-notifications-panel'
+import { useBuildingMembership } from '@/hooks/use-building-membership'
+import { cn } from '@/lib/utils'
 
 export function ProfilePage() {
   const { session, signOutApp } = useAuth()
+  const { isAdmin } = useBuildingMembership()
   const navigate = useNavigate()
   const email = session?.user?.email ?? ''
 
@@ -24,8 +28,8 @@ export function ProfilePage() {
 
   return (
     <div
-      className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top))]"
       dir="rtl"
+      className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top))]"
     >
       <main className="mx-auto max-w-lg px-4 py-6">
         <h1 className="mb-6 text-xl font-semibold tracking-tight text-foreground">פרופיל</h1>
@@ -46,7 +50,22 @@ export function ProfilePage() {
               )}
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-right">
+          <CardContent className="flex flex-col gap-3 text-right">
+            {isAdmin ? (
+              <Link
+                to="/building"
+                className={cn(
+                  buttonVariants({ variant: 'secondary' }),
+                  'h-11 w-full justify-between gap-2 rounded-xl ps-3 pe-3 font-semibold'
+                )}
+              >
+                <ChevronLeft className="size-4 shrink-0 opacity-70" aria-hidden />
+                <span className="flex flex-1 items-center justify-end gap-2">
+                  ניהול בניין
+                  <Building2 className="size-4 text-primary" aria-hidden />
+                </span>
+              </Link>
+            ) : null}
             <Button
               type="button"
               variant="outline"
@@ -58,6 +77,10 @@ export function ProfilePage() {
             </Button>
           </CardContent>
         </Card>
+
+        <div className="mt-4">
+          <PushNotificationsPanel />
+        </div>
       </main>
       <BottomTabBar />
     </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 
 import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
@@ -12,6 +12,7 @@ import {
   insertComment,
   insertPollVote,
 } from '@/lib/feed-queries'
+import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { cn } from '@/lib/utils'
 import type { FeedPost } from '@/types/feed'
 import type { PostComment } from '@/types/feed'
@@ -21,6 +22,8 @@ const fieldClass =
 
 export function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>()
+  const navigate = useNavigate()
+  const { isAdmin } = useBuildingMembership()
   const [post, setPost] = useState<FeedPost | null>(null)
   const [comments, setComments] = useState<PostComment[]>([])
   const [loading, setLoading] = useState(true)
@@ -98,7 +101,13 @@ export function PostDetailPage() {
           <p className="text-sm text-destructive">{error}</p>
         ) : post ? (
           <div className="flex flex-col gap-6">
-            <PostCard post={post} onPollVote={handlePollVote} />
+            <PostCard
+              post={post}
+              onPollVote={handlePollVote}
+              isAdmin={isAdmin}
+              onAdminSuccess={() => void reload()}
+              onAdminDelete={() => navigate('/feed', { replace: true })}
+            />
 
             <section className="space-y-3 text-start" aria-labelledby="comments-heading">
               <h2

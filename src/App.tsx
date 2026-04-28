@@ -9,6 +9,7 @@ import { JoinBuildingPage } from '@/pages/join-building-page'
 import { LoginPage } from '@/pages/login-page'
 import { OnboardingAdminPage } from '@/pages/onboarding-admin-page'
 import { PostDetailPage } from '@/pages/post-detail-page'
+import { BuildingManagementPage } from '@/pages/building-management-page'
 import { ProfilePage } from '@/pages/profile-page'
 import { PostLoginRedirectPage } from '@/pages/post-login-redirect-page'
 
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="votes" element={<FeedPage mode="polls" />} />
             <Route path="post/:postId" element={<PostDetailPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="building" element={<BuildingManagementPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
