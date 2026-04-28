@@ -19,10 +19,8 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'תאורה לא עובדת בחניון',
     author: 'מאור ישראלי',
     apartment: '12',
-    location: 'חניון',
     bodyPreview:
       'שורת נורות ליד היציאה לרחוב לא נדלקת כבר יומיים. אשמח לבדיקה.',
-    hasImage: true,
     comments: 4,
     views: 38,
     recentComments: [
@@ -66,7 +64,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'מנגל בגינה היום ב-18:00',
     author: 'דני לוי',
     apartment: '5',
-    location: 'גינה משותפת',
     bodyPreview:
       'מזמינים שכנים להצטרף — נדאג לעמדת מים ולפח אשפה ליד הכניסה.',
     comments: 2,
@@ -81,7 +78,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'רכב חוסם את חניה 14',
     author: 'נועה כהן',
     apartment: '14',
-    location: 'חנייה 14',
     bodyPreview: 'רכב אפור, ללא תג זיהוי. נא סידור דחוף.',
     comments: 7,
     views: 91,
@@ -94,7 +90,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'המעלית תושבת מחר בין 09:00 ל-12:00',
     author: 'חברת אחזקה — אלמוג',
     apartment: '—',
-    location: 'מעליות',
     bodyPreview:
       'תיקון מנגנון דלת. נא להקדיש זמן נוסף לנסיעה בגרמי מדרגות.',
     comments: 15,
@@ -108,7 +103,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'דליפת מים בחדר כיבוי',
     author: 'רועי',
     apartment: '3',
-    location: 'קומה 1',
     bodyPreview: 'טופל ע"י אינסטלטור. תודה לכל העונים.',
     comments: 3,
     views: 44,

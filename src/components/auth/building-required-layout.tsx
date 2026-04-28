@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom'
 
+import { FeedRefreshProvider } from '@/context/feed-refresh-context'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 
 import { OnboardingLoadingPage } from '@/pages/onboarding-loading-page'
@@ -16,5 +17,9 @@ export function BuildingRequiredLayout() {
     return <Navigate to="/" replace />
   }
 
-  return <Outlet />
+  return (
+    <FeedRefreshProvider>
+      <Outlet />
+    </FeedRefreshProvider>
+  )
 }

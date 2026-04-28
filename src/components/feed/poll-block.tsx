@@ -8,6 +8,8 @@ type Props = {
   postId: string
   poll: PollData
   className?: string
+  /** When set, voting persists to the server; on failure the UI rolls back. */
+  onVote?: (optionId: string) => Promise<{ ok: boolean; message?: string }>
 }
 
 function VoterSummaryLine({
@@ -34,13 +36,15 @@ function VoterSummaryLine({
   )
 }
 
-export function PollBlock({ postId, poll, className }: Props) {
+export function PollBlock({ postId, poll, className, onVote }: Props) {
   const [options, setOptions] = useState<PollOption[]>(() =>
     poll.options.map((o) => ({ ...o }))
   )
   const [hasVoted, setHasVoted] = useState(
     () => poll.isClosed || !!poll.initialVoteOptionId
   )
+  const [voteError, setVoteError] = useState<string | null>(null)
+  const [submittingId, setSubmittingId] = useState<string | null>(null)
 
   const totalVotes = useMemo(
     () => options.reduce((sum, o) => sum + o.votes, 0),
@@ -50,8 +54,32 @@ export function PollBlock({ postId, poll, className }: Props) {
   const eligible = poll.eligibleVoters
   const cancelled = !!poll.isCancelled
 
-  function voteFor(optionId: string) {
+  async function voteFor(optionId: string) {
     if (hasVoted || poll.isClosed || cancelled) return
+    const prevOpts = options.map((o) => ({ ...o }))
+    const prevHasVoted = hasVoted
+
+    if (onVote) {
+      setVoteError(null)
+      setSubmittingId(optionId)
+      setOptions((prev) =>
+        prev.map((o) =>
+          o.id === optionId ? { ...o, votes: o.votes + 1 } : o
+        )
+      )
+      setHasVoted(true)
+
+      const res = await onVote(optionId)
+      setSubmittingId(null)
+      if (!res.ok) {
+        setOptions(prevOpts)
+        setHasVoted(prevHasVoted)
+        setVoteError(res.message ?? 'לא ניתן להצביע כרגע')
+        return
+      }
+      return
+    }
+
     setOptions((prev) =>
       prev.map((o) =>
         o.id === optionId ? { ...o, votes: o.votes + 1 } : o
@@ -68,6 +96,11 @@ export function PollBlock({ postId, poll, className }: Props) {
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
+      {voteError ? (
+        <p className="text-xs text-destructive" role="status">
+          {voteError}
+        </p>
+      ) : null}
       {cancelled ? (
         <>
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -81,6 +114,7 @@ export function PollBlock({ postId, poll, className }: Props) {
           options={options}
           totalVotes={totalVotes}
           eligible={eligible}
+          highlightOptionId={poll.initialVoteOptionId ?? undefined}
         />
       ) : (
         <>
@@ -91,13 +125,15 @@ export function PollBlock({ postId, poll, className }: Props) {
                 type="button"
                 role="listitem"
                 id={`${postId}-${opt.id}`}
+                disabled={!!submittingId}
                 className={cn(
                   'flex min-h-11 w-full cursor-pointer items-center rounded-xl border border-border/80 bg-background/80 px-3 py-2.5 text-start text-sm shadow-xs transition-colors',
-                  'hover:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60'
+                  'hover:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
+                  submittingId && 'pointer-events-none opacity-70'
                 )}
                 onClick={(e) => {
                   e.stopPropagation()
-                  voteFor(opt.id)
+                  void voteFor(opt.id)
                 }}
               >
                 <span className="leading-snug">{opt.label}</span>
@@ -115,10 +151,12 @@ function PollResults({
   options,
   totalVotes,
   eligible,
+  highlightOptionId,
 }: {
   options: PollOption[]
   totalVotes: number
   eligible: number
+  highlightOptionId?: string
 }) {
   const safeTotal = Math.max(totalVotes, 1)
 
@@ -126,11 +164,22 @@ function PollResults({
     <div className="space-y-3">
       {options.map((opt) => {
         const pct = Math.round((opt.votes / safeTotal) * 100)
+        const mine = highlightOptionId === opt.id
         return (
           <div key={opt.id} className="space-y-1.5">
             <div className="flex items-start justify-between gap-2 text-xs">
-              <span className="font-medium leading-snug text-foreground">
+              <span
+                className={cn(
+                  'font-medium leading-snug text-foreground',
+                  mine && 'text-primary'
+                )}
+              >
                 {opt.label}
+                {mine ? (
+                  <span className="ms-1 text-[0.65rem] font-semibold text-primary">
+                    (בחירתך)
+                  </span>
+                ) : null}
               </span>
               <span className="shrink-0 tabular-nums text-muted-foreground">
                 {pct}%
@@ -138,7 +187,10 @@ function PollResults({
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full rounded-full bg-primary/85 transition-[width] duration-300"
+                className={cn(
+                  'h-full rounded-full bg-primary/85 transition-[width] duration-300',
+                  mine && 'bg-primary'
+                )}
                 style={{ width: `${pct}%` }}
               />
             </div>

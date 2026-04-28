@@ -8,7 +8,6 @@ import { FeedPage } from '@/pages/feed-page'
 import { JoinBuildingPage } from '@/pages/join-building-page'
 import { LoginPage } from '@/pages/login-page'
 import { OnboardingAdminPage } from '@/pages/onboarding-admin-page'
-import { PlaceholderPage } from '@/pages/placeholder-page'
 import { PostDetailPage } from '@/pages/post-detail-page'
 import { ProfilePage } from '@/pages/profile-page'
 import { PostLoginRedirectPage } from '@/pages/post-login-redirect-page'
@@ -32,10 +31,11 @@ export default function App() {
           <Route path="onboarding/admin" element={<OnboardingAdminPage />} />
           <Route element={<BuildingRequiredLayout />}>
             <Route path="home" element={<Navigate to="/feed" replace />} />
-            <Route path="feed" element={<FeedPage />} />
+            <Route path="feed" element={<FeedPage mode="all" />} />
+            <Route path="reports" element={<FeedPage mode="reports" />} />
+            <Route path="requests" element={<FeedPage mode="requests" />} />
+            <Route path="votes" element={<FeedPage mode="polls" />} />
             <Route path="post/:postId" element={<PostDetailPage />} />
-            <Route path="votes" element={<PlaceholderPage title="סקרים" />} />
-            <Route path="reports" element={<PlaceholderPage title="דיווחים" />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
         </Route>

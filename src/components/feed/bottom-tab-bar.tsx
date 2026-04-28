@@ -2,9 +2,9 @@ import { useState, type ReactNode } from 'react'
 import {
   BarChart2,
   ClipboardList,
+  Handshake,
   Home,
   Plus,
-  UserRound,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
@@ -35,11 +35,12 @@ type NavItem = {
   end?: boolean
 }
 
-const NAV_ITEMS: [NavItem, NavItem, NavItem, NavItem] = [
-  { to: '/feed', label: 'פיד', icon: Home, end: false },
-  { to: '/votes', label: 'סקרים', icon: BarChart2, end: false },
+/** פיד → דיווחים → (פוסט) → בקשות → סקרים — order in DOM; pill uses dir=rtl so פיד is on the right. */
+const NAV_SIDE: [NavItem, NavItem, NavItem, NavItem] = [
+  { to: '/feed', label: 'פיד', icon: Home, end: true },
   { to: '/reports', label: 'דיווחים', icon: ClipboardList, end: false },
-  { to: '/profile', label: 'פרופיל', icon: UserRound, end: false },
+  { to: '/requests', label: 'בקשות', icon: Handshake, end: false },
+  { to: '/votes', label: 'סקרים', icon: BarChart2, end: false },
 ]
 
 function NavTab({ to, label, icon: Icon, end }: NavItem) {
@@ -81,6 +82,7 @@ export function BottomTabBar() {
         <nav
           className="pointer-events-auto w-full max-w-md"
           aria-label="ניווט ראשי"
+          dir="rtl"
         >
           <div
             className={cn(
@@ -88,8 +90,8 @@ export function BottomTabBar() {
               'bg-[#232323]/98 shadow-[0_10px_40px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.08] backdrop-blur-md'
             )}
           >
-            <NavTab {...NAV_ITEMS[0]} />
-            <NavTab {...NAV_ITEMS[1]} />
+            <NavTab {...NAV_SIDE[0]} />
+            <NavTab {...NAV_SIDE[1]} />
 
             <div className="flex min-w-0 flex-1 basis-0 justify-center">
               <button
@@ -110,8 +112,8 @@ export function BottomTabBar() {
               </button>
             </div>
 
-            <NavTab {...NAV_ITEMS[2]} />
-            <NavTab {...NAV_ITEMS[3]} />
+            <NavTab {...NAV_SIDE[2]} />
+            <NavTab {...NAV_SIDE[3]} />
           </div>
         </nav>
       </div>

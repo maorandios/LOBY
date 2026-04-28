@@ -39,10 +39,9 @@ export interface FeedPostBase {
   title: string
   author: string
   apartment: string
-  location?: string
   bodyPreview?: string
-  /** Show a placeholder image block */
-  hasImage?: boolean
+  /** Public image URL from storage (optional attachment) */
+  imageUrl?: string
   comments: number
   views?: number
   /** Shown on card; user can add more inline */

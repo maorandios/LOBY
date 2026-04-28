@@ -19,9 +19,13 @@ const CHIP =
 
 type Props = {
   post: FeedPost
+  onPollVote?: (
+    postId: string,
+    optionId: string
+  ) => Promise<{ ok: boolean; message?: string }>
 }
 
-export function PostCard({ post }: Props) {
+export function PostCard({ post, onPollVote }: Props) {
   const navigate = useNavigate()
   const isPoll = isPollPost(post)
   const isUpdate = post.type === 'עדכון'
@@ -114,12 +118,16 @@ export function PostCard({ post }: Props) {
           </p>
         )}
 
-        {post.hasImage && !isUpdate && !isPoll && (
-          <div
-            className="relative aspect-square w-full overflow-hidden rounded-2xl bg-muted"
-            aria-hidden
-          />
-        )}
+        {post.imageUrl ? (
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted">
+            <img
+              src={post.imageUrl}
+              alt=""
+              className="size-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        ) : null}
 
         {isPoll && !isUpdate && (
           <div
@@ -127,7 +135,15 @@ export function PostCard({ post }: Props) {
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
-            <PollBlock postId={post.id} poll={post.poll} />
+            <PollBlock
+              postId={post.id}
+              poll={post.poll}
+              onVote={
+                onPollVote
+                  ? (optionId) => onPollVote(post.id, optionId)
+                  : undefined
+              }
+            />
           </div>
         )}
       </div>
