@@ -3,7 +3,6 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { BuildingRequiredLayout } from '@/components/auth/building-required-layout'
 import { ProtectedLayout } from '@/components/auth/protected-layout'
 import { RequireGuest } from '@/components/auth/require-guest'
-import { DebugOverlay } from '@/components/debug/debug-overlay'
 import { AuthCallbackPage } from '@/pages/auth-callback-page'
 import { FeedPage } from '@/pages/feed-page'
 import { JoinBuildingPage } from '@/pages/join-building-page'
@@ -17,7 +16,6 @@ import { PostLoginRedirectPage } from '@/pages/post-login-redirect-page'
 export default function App() {
   return (
     <BrowserRouter>
-      <DebugOverlay />
       <Routes>
         <Route
           path="/login"

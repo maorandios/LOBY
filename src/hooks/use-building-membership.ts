@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/auth/use-auth'
 import type { BuildingMemberRow } from '@/types/building'
-import { dlog } from '@/lib/debug-log'
 import { supabase } from '@/lib/supabase'
 
 export function useBuildingMembership() {
@@ -25,7 +24,6 @@ export function useBuildingMembership() {
     let cancelled = false
 
     async function run() {
-      dlog(`membership:run user=${userId ?? 'null'} init=${initializedRef.current ? '1' : '0'}`)
       if (!userId) {
         setMember(null)
         setLoading(false)

@@ -1,17 +1,11 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
-
-import { dlog } from '@/lib/debug-log'
-
-/** Survives same-tab reload — WKWebView can refresh the SPA when returning from Photos/Camera. */
-const STORAGE_KEY_OPEN = 'loby:v1:create_post_open'
 
 type CreatePostComposerContextValue = {
   open: boolean
@@ -22,25 +16,9 @@ const CreatePostComposerContext =
   createContext<CreatePostComposerContextValue | null>(null)
 
 export function CreatePostComposerProvider({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(() => {
-    if (typeof window === 'undefined') return false
-    try {
-      return sessionStorage.getItem(STORAGE_KEY_OPEN) === '1'
-    } catch {
-      return false
-    }
-  })
+  const [open, setOpen] = useState(false)
 
-  useEffect(() => {
-    try {
-      if (open) sessionStorage.setItem(STORAGE_KEY_OPEN, '1')
-      else sessionStorage.removeItem(STORAGE_KEY_OPEN)
-    } catch {
-      /* private mode etc. */
-    }
-    dlog(`composer-context: open=${open}`)
-  }, [open])
-
+  /** Block all interaction with the rest of the app while the composer is open. */
   useLayoutEffect(() => {
     const root = document.getElementById('root')
     if (!root) return
