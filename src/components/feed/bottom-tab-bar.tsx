@@ -75,13 +75,19 @@ export function BottomTabBar() {
   return (
     <>
       <div
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-3"
+        className={cn(
+          'pointer-events-none fixed inset-x-0 bottom-0 flex justify-center px-3',
+          createOpen ? 'z-40' : 'z-50'
+        )}
         style={{
           paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))',
         }}
       >
         <nav
-          className="pointer-events-auto w-full max-w-md"
+          className={cn(
+            'w-full max-w-md',
+            createOpen ? 'pointer-events-none' : 'pointer-events-auto'
+          )}
           aria-label="ניווט ראשי"
           dir="rtl"
         >
