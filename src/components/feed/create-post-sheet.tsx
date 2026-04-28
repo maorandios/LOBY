@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useFeedRefresh } from '@/context/feed-refresh-context'
 import { createPost } from '@/lib/feed-queries'
@@ -51,7 +51,8 @@ function PostImagePicker({
       <input
         id={inputId}
         type="file"
-        className="sr-only"
+        tabIndex={-1}
+        className="sr-only text-base"
         accept="image/*"
         disabled={disabled}
         onChange={(e) => {
@@ -61,15 +62,16 @@ function PostImagePicker({
         }}
       />
       {!previewUrl ? (
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 rounded-xl font-medium"
-          disabled={disabled}
-          onClick={() => document.getElementById(inputId)?.click()}
+        <label
+          htmlFor={inputId}
+          className={cn(
+            buttonVariants({ variant: 'outline' }),
+            'h-11 w-full cursor-pointer justify-center rounded-xl font-medium',
+            disabled && 'pointer-events-none opacity-50'
+          )}
         >
           צילום או העלאה מתמונות
-        </Button>
+        </label>
       ) : (
         <div className="relative overflow-hidden rounded-xl border border-border/60">
           <img
@@ -164,23 +166,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prevOverflow
-    }
-  }, [open])
-
-  /** iOS: returning from camera/Photos can deliver a touch to #root (e.g. פיד). inert blocks the whole app under the overlay. */
-  useLayoutEffect(() => {
-    const root = document.getElementById('root')
-    if (!root) return
-    if (open) {
-      root.setAttribute('inert', '')
-      root.setAttribute('aria-hidden', 'true')
-    } else {
-      root.removeAttribute('inert')
-      root.removeAttribute('aria-hidden')
-    }
-    return () => {
-      root.removeAttribute('inert')
-      root.removeAttribute('aria-hidden')
     }
   }, [open])
 

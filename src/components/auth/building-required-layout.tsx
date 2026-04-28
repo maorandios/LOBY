@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation, useNavigationType } from 'react-router-d
 import { useLayoutEffect, useRef } from 'react'
 
 import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
+import { CreatePostComposerProvider } from '@/context/create-post-composer-context'
 import { FeedRefreshProvider } from '@/context/feed-refresh-context'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { cn } from '@/lib/utils'
@@ -35,15 +36,17 @@ export function BuildingRequiredLayout() {
 
   return (
     <FeedRefreshProvider>
-      <div className="relative min-h-svh w-full max-w-[100vw] overflow-x-clip">
-        <div
-          key={pathKey}
-          className={cn('min-h-svh max-w-[100vw] overflow-x-clip', routeAnim)}
-        >
-          <Outlet />
+      <CreatePostComposerProvider>
+        <div className="relative min-h-svh w-full max-w-[100vw] overflow-x-clip">
+          <div
+            key={pathKey}
+            className={cn('min-h-svh max-w-[100vw] overflow-x-clip', routeAnim)}
+          >
+            <Outlet />
+          </div>
+          <BottomTabBar />
         </div>
-        <BottomTabBar />
-      </div>
+      </CreatePostComposerProvider>
     </FeedRefreshProvider>
   )
 }

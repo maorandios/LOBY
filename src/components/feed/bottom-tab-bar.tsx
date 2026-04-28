@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import {
   BarChart2,
   ClipboardList,
@@ -9,6 +9,7 @@ import {
 import { NavLink } from 'react-router-dom'
 
 import { CreatePostSheet } from '@/components/feed/create-post-sheet'
+import { useCreatePostComposer } from '@/context/create-post-composer-context'
 import { cn } from '@/lib/utils'
 
 const TEAL = '#3EBDA5'
@@ -70,7 +71,7 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
 }
 
 export function BottomTabBar() {
-  const [createOpen, setCreateOpen] = useState(false)
+  const { open: createOpen, setOpen: setCreateOpen } = useCreatePostComposer()
 
   return (
     <>
