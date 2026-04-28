@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -164,6 +164,23 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prevOverflow
+    }
+  }, [open])
+
+  /** iOS: returning from camera/Photos can deliver a touch to #root (e.g. פיד). inert blocks the whole app under the overlay. */
+  useLayoutEffect(() => {
+    const root = document.getElementById('root')
+    if (!root) return
+    if (open) {
+      root.setAttribute('inert', '')
+      root.setAttribute('aria-hidden', 'true')
+    } else {
+      root.removeAttribute('inert')
+      root.removeAttribute('aria-hidden')
+    }
+    return () => {
+      root.removeAttribute('inert')
+      root.removeAttribute('aria-hidden')
     }
   }, [open])
 
@@ -601,11 +618,15 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   if (!open) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-[210] flex flex-col justify-end">
+    <div
+      data-loby-create-post=""
+      className="fixed inset-0 z-[2147483000]"
+      style={{ isolation: 'isolate' }}
+    >
       <button
         type="button"
         aria-label="סגירה"
-        className="min-h-[18vh] w-full shrink-0 cursor-default border-0 bg-black/40 touch-manipulation"
+        className="absolute inset-0 block h-full w-full cursor-default border-0 bg-black/45 touch-manipulation"
         onClick={() => handleOpenChange(false)}
       />
       <div
@@ -614,15 +635,16 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
         aria-label="יצירת פריט חדש"
         dir="rtl"
         className={cn(
-          'relative max-h-[min(90vh,100dvh)] w-full shrink-0 overflow-y-auto rounded-t-2xl border-t border-border',
-          'bg-popover pb-[calc(1rem+env(safe-area-inset-bottom,0px))] text-sm text-popover-foreground shadow-lg'
+          'absolute inset-x-0 bottom-0 mx-auto flex max-h-[min(92vh,100dvh)] w-full max-w-lg flex-col overflow-y-auto overscroll-contain rounded-t-2xl border-t border-border',
+          'bg-popover pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[max(env(safe-area-inset-top,0px),0.75rem)] text-sm text-popover-foreground shadow-lg'
         )}
+        onClick={(e) => e.stopPropagation()}
       >
         <Button
           type="button"
           variant="ghost"
           size="icon-sm"
-          className="absolute top-3 end-3 z-10 rounded-full"
+          className="absolute top-3 end-3 z-10 shrink-0 rounded-full"
           onClick={() => handleOpenChange(false)}
           aria-label="סגירה"
         >
