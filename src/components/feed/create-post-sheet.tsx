@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { Dialog } from '@base-ui/react/dialog'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -41,12 +41,16 @@ function PostImagePicker({
   inputId,
   onPick,
   onClear,
+  onBeforeOpenNativePicker,
+  onAfterNativePick,
 }: {
   previewUrl: string | null
   disabled?: boolean
   inputId: string
   onPick: (file: File) => void
   onClear: () => void
+  onBeforeOpenNativePicker?: () => void
+  onAfterNativePick?: () => void
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -60,10 +64,14 @@ function PostImagePicker({
         className="sr-only"
         accept="image/*"
         disabled={disabled}
+        onFocus={() => {
+          onBeforeOpenNativePicker?.()
+        }}
         onChange={(e) => {
           const f = e.target.files?.[0]
           if (f) onPick(f)
           e.target.value = ''
+          onAfterNativePick?.()
         }}
       />
       {!previewUrl ? (
@@ -72,6 +80,10 @@ function PostImagePicker({
           variant="outline"
           className="h-11 rounded-xl font-medium"
           disabled={disabled}
+          onPointerDownCapture={() => {
+            if (disabled) return
+            onBeforeOpenNativePicker?.()
+          }}
           onClick={() => document.getElementById(inputId)?.click()}
         >
           צילום או העלאה מתמונות
@@ -114,11 +126,50 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
 
+  /** While iOS opens camera/album sheet, Dialog may try to dismiss (focus/backdrop). Ignore until picker ends. */
+  const nativePickerUnlockTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
+    null
+  )
+  const nativePickerSessionRef = useRef(false)
+
+  const beginNativePickerSession = useCallback(() => {
+    nativePickerSessionRef.current = true
+    if (nativePickerUnlockTimerRef.current != null) {
+      window.clearTimeout(nativePickerUnlockTimerRef.current)
+    }
+    nativePickerUnlockTimerRef.current = window.setTimeout(() => {
+      nativePickerSessionRef.current = false
+      nativePickerUnlockTimerRef.current = null
+    }, 90_000)
+  }, [])
+
+  const endNativePickerSession = useCallback(() => {
+    nativePickerSessionRef.current = false
+    if (nativePickerUnlockTimerRef.current != null) {
+      window.clearTimeout(nativePickerUnlockTimerRef.current)
+      nativePickerUnlockTimerRef.current = null
+    }
+  }, [])
+
   useEffect(() => {
     return () => {
       if (imagePreview) URL.revokeObjectURL(imagePreview)
     }
   }, [imagePreview])
+
+  useEffect(() => {
+    if (!open) return
+    function onVisibility() {
+      if (document.visibilityState !== 'visible') return
+      window.setTimeout(() => {
+        endNativePickerSession()
+      }, 400)
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [open, endNativePickerSession])
 
   function clearImage() {
     if (imagePreview) URL.revokeObjectURL(imagePreview)
@@ -155,18 +206,31 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next) resetForm()
+    if (!next) {
+      endNativePickerSession()
+      resetForm()
+    }
     onOpenChange(next)
   }
 
-  /** Camera / library focus leaves the sheet temporarily; Base UI would close on `focus-out`. */
   function handleSheetOpenChange(
     nextOpen: boolean,
     eventDetails: Dialog.Root.ChangeEventDetails
   ) {
-    if (!nextOpen && eventDetails.reason === 'focus-out') {
-      eventDetails.cancel()
-      return
+    if (!nextOpen) {
+      const reason = eventDetails.reason
+      const explicitDismiss =
+        reason === 'close-press' || reason === 'escape-key'
+
+      if (nativePickerSessionRef.current && !explicitDismiss) {
+        eventDetails.cancel()
+        return
+      }
+
+      if (!nativePickerSessionRef.current && reason === 'focus-out') {
+        eventDetails.cancel()
+        return
+      }
     }
     handleOpenChange(nextOpen)
   }
@@ -415,6 +479,8 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           disabled={submitting}
           onPick={handleImagePick}
           onClear={clearImage}
+          onBeforeOpenNativePicker={beginNativePickerSession}
+          onAfterNativePick={endNativePickerSession}
         />
         {error ? (
           <p className="text-sm text-destructive" role="alert">
@@ -461,6 +527,8 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           disabled={submitting}
           onPick={handleImagePick}
           onClear={clearImage}
+          onBeforeOpenNativePicker={beginNativePickerSession}
+          onAfterNativePick={endNativePickerSession}
         />
         {error ? (
           <p className="text-sm text-destructive" role="alert">
@@ -499,6 +567,8 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           disabled={submitting}
           onPick={handleImagePick}
           onClear={clearImage}
+          onBeforeOpenNativePicker={beginNativePickerSession}
+          onAfterNativePick={endNativePickerSession}
         />
         {error ? (
           <p className="text-sm text-destructive" role="alert">
@@ -545,6 +615,8 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           disabled={submitting}
           onPick={handleImagePick}
           onClear={clearImage}
+          onBeforeOpenNativePicker={beginNativePickerSession}
+          onAfterNativePick={endNativePickerSession}
         />
         <p className="text-sm font-medium text-foreground">אפשרויות</p>
         <div className="flex flex-col gap-2">
@@ -589,7 +661,11 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   )
 
   return (
-    <Sheet open={open} onOpenChange={handleSheetOpenChange}>
+    <Sheet
+      open={open}
+      onOpenChange={handleSheetOpenChange}
+      disablePointerDismissal
+    >
       <SheetContent
         side="bottom"
         className="max-h-[90vh] overflow-y-auto rounded-t-2xl px-0 pb-[calc(1rem+env(safe-area-inset-bottom))]"
