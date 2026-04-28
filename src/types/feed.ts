@@ -10,6 +10,8 @@ export interface PostComment {
   apartment: string
   text: string
   relativeTime: string
+  /** Building committee admin — show badge beside name */
+  authorIsAdmin?: boolean
 }
 
 export interface PollOption {
@@ -41,6 +43,8 @@ export interface FeedPostBase {
   title: string
   author: string
   apartment: string
+  /** Building committee admin — badge beside author name */
+  authorIsAdmin?: boolean
   bodyPreview?: string
   /** Public image URL from storage (optional attachment) */
   imageUrl?: string

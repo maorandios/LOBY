@@ -1,0 +1,40 @@
+import { AdminBadgeCheck } from '@/components/admin/admin-badge-check'
+import { cn } from '@/lib/utils'
+
+/** Author display name with optional מנהל ועד badge when `authorIsAdmin` from `building_members`. */
+export function AuthorNameWithAdminBadge({
+  name,
+  authorIsAdmin,
+  nameClassName,
+}: {
+  name: string
+  authorIsAdmin?: boolean
+  nameClassName?: string
+}) {
+  if (!authorIsAdmin) {
+    return (
+      <span
+        className={cn('font-semibold text-foreground', nameClassName)}
+      >
+        {name}
+      </span>
+    )
+  }
+
+  /* dir=rtl places first DOM item on inline-start (= physical right): badge hugs the right of the name cluster */
+  return (
+    <span
+      className="inline-flex min-w-0 items-center gap-1"
+      dir="rtl"
+    >
+      <span className="inline-flex shrink-0" role="img" aria-label="מנהל ועד">
+        <AdminBadgeCheck className="size-3.5" />
+      </span>
+      <span
+        className={cn('font-semibold text-foreground', nameClassName)}
+      >
+        {name}
+      </span>
+    </span>
+  )
+}

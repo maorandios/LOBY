@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Building2, Copy, Share2 } from 'lucide-react'
 
+import { AdminBadgeCheck } from '@/components/admin/admin-badge-check'
 import { ProfileCornerLink } from '@/components/feed/feed-header'
 import {
   Button,
@@ -216,7 +217,8 @@ export function BuildingManagementPage() {
 
         <div className="mb-6 flex items-center gap-2">
           <Building2 className="size-6 text-primary" aria-hidden />
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
+            <AdminBadgeCheck className="size-5" />
             ניהול בניין
           </h1>
         </div>
@@ -296,7 +298,8 @@ export function BuildingManagementPage() {
             <h2 id="residents-heading" className="text-sm font-semibold text-foreground">
               דיירים
             </h2>
-            <span className="text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <AdminBadgeCheck className="size-3.5" />
               מנהלים: {adminCount}/5 לכל היותר
             </span>
           </div>
@@ -354,7 +357,8 @@ export function BuildingManagementPage() {
                       <p className="text-sm text-muted-foreground">
                         דירה {apartment(m)}
                       </p>
-                      <span className="mt-2 inline-block rounded-full bg-primary/12 px-2 py-0.5 text-[0.7rem] font-semibold text-primary">
+                      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 text-[0.7rem] font-semibold text-primary">
+                        <AdminBadgeCheck className="size-3.5" />
                         ועד
                       </span>
                     </div>

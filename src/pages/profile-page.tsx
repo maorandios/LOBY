@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { AdminBadgeCheck } from '@/components/admin/admin-badge-check'
 import { PushNotificationsPanel } from '@/components/profile/push-notifications-panel'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { cn } from '@/lib/utils'
@@ -60,6 +61,7 @@ export function ProfilePage() {
               >
                 <ChevronLeft className="size-4 shrink-0 opacity-70" aria-hidden />
                 <span className="flex flex-1 items-center justify-end gap-2">
+                  <AdminBadgeCheck />
                   ניהול בניין
                   <Building2 className="size-4 text-primary" aria-hidden />
                 </span>

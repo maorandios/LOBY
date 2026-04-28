@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 
+import { AdminBadgeCheck } from '@/components/admin/admin-badge-check'
 import { FeedSkeleton } from '@/components/feed/feed-skeleton'
 import { FeedHeader } from '@/components/feed/feed-header'
 import { PostCard } from '@/components/feed/post-card'
@@ -184,7 +185,10 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
         <main className="mx-auto w-full max-w-lg px-3 py-4">
           {inviteUrl && member?.role === 'admin' ? (
             <div className="mb-4 rounded-xl border border-[#0369a1] bg-[#e0f2fe] px-3 py-3 text-right text-sm text-[#0c4a6e]">
-              <p className="mb-2 font-semibold">קישור הזמנה לדיירים</p>
+              <p className="mb-2 flex items-center justify-end gap-2 font-semibold">
+                <AdminBadgeCheck className="size-4" />
+                קישור הזמנה לדיירים
+              </p>
               <p className="mb-2 break-all font-mono text-xs leading-relaxed" dir="ltr">
                 {inviteUrl}
               </p>

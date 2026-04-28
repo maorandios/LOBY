@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { AdminBadgeCheck } from '@/components/admin/admin-badge-check'
 import {
   adminDeletePost,
   adminMarkPollDecided,
@@ -86,7 +87,10 @@ export function PostAdminSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="pb-[max(1rem,env(safe-area-inset-bottom))]" dir="rtl">
         <SheetHeader className="text-right">
-          <SheetTitle>פעולות ניהול</SheetTitle>
+          <SheetTitle className="flex items-center justify-end gap-2">
+            <AdminBadgeCheck className="size-5" />
+            פעולות ניהול
+          </SheetTitle>
           <SheetDescription className="text-pretty">
             פעולות אלו זמינות למנהלי הבניין בלבד.
           </SheetDescription>

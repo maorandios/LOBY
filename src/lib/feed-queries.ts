@@ -1,5 +1,6 @@
 import type { PostStatusDb, PostTypeDb } from '@/lib/post-types'
 import { postStatusDbToHe, postTypeDbToHe } from '@/lib/post-types'
+import type { BuildingMemberRole } from '@/types/building'
 import type { FeedPost, PollData, PostComment } from '@/types/feed'
 import { isPollPost } from '@/types/feed'
 import { supabase } from '@/lib/supabase'
@@ -35,10 +36,13 @@ type PollOptionRowAgg = {
   poll_votes: CountAgg | null
 }
 
-function displayName(
-  map: Map<string, { name: string | null; apt: string | null }>,
-  userId: string
-): string {
+type MemberMapEntry = {
+  name: string | null
+  apt: string | null
+  role: BuildingMemberRole | null
+}
+
+function displayName(map: Map<string, MemberMapEntry>, userId: string): string {
   const row = map.get(userId)
   const n = row?.name?.trim()
   if (n) return n
@@ -46,12 +50,16 @@ function displayName(
 }
 
 function apartmentLabel(
-  map: Map<string, { name: string | null; apt: string | null }>,
+  map: Map<string, MemberMapEntry>,
   userId: string
 ): string {
   const a = map.get(userId)?.apt?.trim()
   if (a && a.length > 0) return a
   return '—'
+}
+
+function memberIsAdmin(map: Map<string, MemberMapEntry>, userId: string): boolean {
+  return map.get(userId)?.role === 'admin'
 }
 
 function buildPollData(
@@ -141,12 +149,12 @@ export async function fetchBuildingMemberCount(buildingId: string): Promise<numb
 
 export async function fetchMemberMap(
   buildingId: string
-): Promise<Map<string, { name: string | null; apt: string | null }>> {
+): Promise<Map<string, MemberMapEntry>> {
   const { data, error } = await supabase
     .from('building_members')
-    .select('user_id, full_name, apartment_number')
+    .select('user_id, full_name, apartment_number, role')
     .eq('building_id', buildingId)
-  const map = new Map<string, { name: string | null; apt: string | null }>()
+  const map = new Map<string, MemberMapEntry>()
   if (error) {
     console.error('[LOBY] fetchMemberMap', error)
     return map
@@ -155,6 +163,7 @@ export async function fetchMemberMap(
     map.set(row.user_id as string, {
       name: row.full_name as string | null,
       apt: row.apartment_number as string | null,
+      role: (row.role as BuildingMemberRole) ?? null,
     })
   }
   return map
@@ -239,7 +248,7 @@ function rowToFeedPost(
     comments?: CountAgg | null
     poll_options?: PollOptionRowAgg[] | null
   },
-  memberMap: Map<string, { name: string | null; apt: string | null }>,
+  memberMap: Map<string, MemberMapEntry>,
   memberCount: number,
   myVoteOptionId: string | null
 ): FeedPost {
@@ -254,6 +263,7 @@ function rowToFeedPost(
     title: row.title,
     author: displayName(memberMap, row.author_id),
     apartment: apartmentLabel(memberMap, row.author_id),
+    authorIsAdmin: memberIsAdmin(memberMap, row.author_id),
     bodyPreview: row.body?.trim() ?? undefined,
     imageUrl: row.image_url?.trim() || undefined,
     comments: commentsCount,
@@ -370,13 +380,17 @@ export async function fetchCommentsForPost(
   const buildingId = postRow?.building_id as string | undefined
   const memberMap = buildingId ? await fetchMemberMap(buildingId) : new Map()
 
-  return (data ?? []).map((c) => ({
-    id: c.id as string,
-    author: displayName(memberMap, c.author_id as string),
-    apartment: apartmentLabel(memberMap, c.author_id as string),
-    text: (c.body as string) ?? '',
-    relativeTime: formatRelativeTimeHe(c.created_at as string),
-  }))
+  return (data ?? []).map((c) => {
+    const authorId = c.author_id as string
+    return {
+      id: c.id as string,
+      author: displayName(memberMap, authorId),
+      apartment: apartmentLabel(memberMap, authorId),
+      text: (c.body as string) ?? '',
+      relativeTime: formatRelativeTimeHe(c.created_at as string),
+      authorIsAdmin: memberIsAdmin(memberMap, authorId),
+    }
+  })
 }
 
 export async function insertComment(
@@ -415,12 +429,14 @@ export async function insertComment(
   const buildingId = postRow?.building_id as string | undefined
   const memberMap = buildingId ? await fetchMemberMap(buildingId) : new Map()
 
+  const authorId = data.author_id as string
   return {
     id: data.id as string,
-    author: displayName(memberMap, data.author_id as string),
-    apartment: apartmentLabel(memberMap, data.author_id as string),
+    author: displayName(memberMap, authorId),
+    apartment: apartmentLabel(memberMap, authorId),
     text: (data.body as string) ?? '',
     relativeTime: formatRelativeTimeHe(data.created_at as string),
+    authorIsAdmin: memberIsAdmin(memberMap, authorId),
   }
 }
 

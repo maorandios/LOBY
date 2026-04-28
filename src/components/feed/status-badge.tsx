@@ -9,13 +9,12 @@ import {
 import type { PostStatusHe } from '@/types/feed'
 import { cn } from '@/lib/utils'
 
+/** Text color per status; no fill, no border. */
 const statusChipClass: Record<PostStatusHe, string> = {
-  פתוח: 'bg-neutral-500/12 text-neutral-800 dark:bg-neutral-400/15 dark:text-neutral-100',
-  בטיפול:
-    'bg-amber-500/15 text-amber-950 dark:bg-amber-400/18 dark:text-amber-50',
-  נסגר: 'bg-neutral-500/10 text-neutral-600 dark:bg-neutral-500/15 dark:text-neutral-300',
-  הוחלט:
-    'bg-emerald-500/15 text-emerald-900 dark:bg-emerald-400/18 dark:text-emerald-50',
+  פתוח: 'text-neutral-800 dark:text-neutral-100',
+  בטיפול: 'text-amber-950 dark:text-amber-50',
+  נסגר: 'text-neutral-600 dark:text-neutral-300',
+  הוחלט: 'text-emerald-900 dark:text-emerald-50',
 }
 
 const statusLucideIcon: Record<PostStatusHe, LucideIcon> = {

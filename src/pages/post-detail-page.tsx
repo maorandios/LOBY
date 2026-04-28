@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 
+import { AuthorNameWithAdminBadge } from '@/components/feed/author-name-with-admin'
 import { PostDetailSkeleton } from '@/components/feed/post-detail-skeleton'
 import { ProfileCornerLink } from '@/components/feed/feed-header'
 import { PostCard } from '@/components/feed/post-card'
@@ -128,7 +129,11 @@ export function PostDetailPage() {
                       className="rounded-2xl border border-border/60 bg-card/80 px-4 py-3 transition-[transform] duration-100 motion-reduce:transition-none active:scale-[0.993]"
                     >
                       <p className="text-[0.8rem] text-muted-foreground">
-                        <span className="font-semibold text-foreground">{c.author}</span>
+                        <AuthorNameWithAdminBadge
+                          name={c.author}
+                          authorIsAdmin={c.authorIsAdmin}
+                          nameClassName="text-[0.8rem]"
+                        />
                         <span aria-hidden> · </span>
                         דירה {c.apartment}
                         <span aria-hidden> · </span>

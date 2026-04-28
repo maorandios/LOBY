@@ -11,6 +11,7 @@ import {
   postTypeLucideIcon,
   typeBadgeClass,
 } from '@/components/feed/post-type-styles'
+import { AuthorNameWithAdminBadge } from '@/components/feed/author-name-with-admin'
 import { StatusBadge } from '@/components/feed/status-badge'
 import { cn } from '@/lib/utils'
 import { isPollPost, type FeedPost } from '@/types/feed'
@@ -77,9 +78,9 @@ export function PostCard({
       {isAdmin ? (
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="icon-sm"
-          className="shrink-0 rounded-full border-border/80"
+          className="shrink-0 rounded-full border border-zinc-300/90 bg-transparent shadow-none hover:bg-muted/30 dark:border-zinc-500 dark:hover:bg-muted/20"
           aria-label="פעולות ניהול פוסט"
           onClick={(e) => {
             e.stopPropagation()
@@ -94,7 +95,10 @@ export function PostCard({
 
   const residentMeta = (
     <>
-      <span className="font-semibold text-foreground">{post.author}</span>
+      <AuthorNameWithAdminBadge
+        name={post.author}
+        authorIsAdmin={post.authorIsAdmin}
+      />
       <span aria-hidden className="text-muted-foreground/80">
         {' '}
         ·{' '}
