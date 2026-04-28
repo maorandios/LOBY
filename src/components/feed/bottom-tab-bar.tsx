@@ -52,7 +52,8 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
         className={({ isActive }) =>
           cn(
             ROUND_SLOT,
-            'touch-manipulation transition-[color,background-color,box-shadow] duration-200',
+            'touch-manipulation transition-[transform,color,background-color,box-shadow] duration-150 motion-reduce:transition-colors',
+            'active:scale-[0.93] motion-reduce:active:scale-100',
             isActive
               ? 'bg-white text-zinc-900 shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
               : 'bg-transparent text-white/90 hover:text-white'
@@ -99,7 +100,8 @@ export function BottomTabBar() {
                 onClick={() => setCreateOpen(true)}
                 className={cn(
                   ROUND_SLOT,
-                  'text-white touch-manipulation transition active:scale-[0.98] motion-reduce:transform-none',
+                  'text-white touch-manipulation transition-[transform,box-shadow] duration-150',
+                  'active:scale-[0.93] motion-reduce:active:scale-100',
                   'shadow-[0_1px_3px_rgba(0,0,0,0.2)]'
                 )}
                 style={{ backgroundColor: TEAL }}

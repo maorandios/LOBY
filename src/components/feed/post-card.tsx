@@ -113,8 +113,9 @@ export function PostCard({
   return (
     <article
       className={cn(
-        'flex cursor-pointer touch-manipulation flex-col overflow-hidden p-5 transition-[box-shadow,transform] duration-200',
-        'hover:-translate-y-px hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.5)]',
+        'flex cursor-pointer touch-manipulation flex-col overflow-hidden p-5',
+        'transition-[box-shadow,transform] duration-150 motion-reduce:transition-colors',
+        'active:scale-[0.993] hover:-translate-y-px hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.5)]',
         cardAccentByType(post.type)
       )}
       onClick={goToPost}

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 
 import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
+import { PostDetailSkeleton } from '@/components/feed/post-detail-skeleton'
 import { ProfileCornerLink } from '@/components/feed/feed-header'
 import { PostCard } from '@/components/feed/post-card'
 import { buttonVariants } from '@/components/ui/button'
@@ -96,7 +97,7 @@ export function PostDetailPage() {
         </Link>
 
         {loading ? (
-          <p className="text-sm text-muted-foreground">טוען…</p>
+          <PostDetailSkeleton />
         ) : error ? (
           <p className="text-sm text-destructive">{error}</p>
         ) : post ? (
@@ -118,12 +119,14 @@ export function PostDetailPage() {
               </h2>
               <ul className="flex flex-col gap-3">
                 {comments.length === 0 ? (
-                  <li className="text-sm text-muted-foreground">אין תגובות עדיין</li>
+                  <li className="text-sm text-muted-foreground">
+                    אין תגובות עדיין
+                  </li>
                 ) : (
                   comments.map((c) => (
                     <li
                       key={c.id}
-                      className="rounded-2xl border border-border/60 bg-card/80 px-4 py-3"
+                      className="rounded-2xl border border-border/60 bg-card/80 px-4 py-3 transition-[transform] duration-100 motion-reduce:transition-none active:scale-[0.993]"
                     >
                       <p className="text-[0.8rem] text-muted-foreground">
                         <span className="font-semibold text-foreground">{c.author}</span>
@@ -155,7 +158,7 @@ export function PostDetailPage() {
                   type="button"
                   className={cn(
                     buttonVariants({ variant: 'default' }),
-                    'mt-2 h-10 w-full rounded-full font-semibold'
+                    'mt-2 h-10 w-full rounded-full touch-manipulation font-semibold duration-150'
                   )}
                   disabled={sending || !commentBody.trim()}
                   onClick={() => void handleSendComment()}
