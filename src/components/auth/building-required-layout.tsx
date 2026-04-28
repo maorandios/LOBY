@@ -13,6 +13,8 @@ import { OnboardingLoadingPage } from '@/pages/onboarding-loading-page'
 /** Requires an authenticated user with a building_members row. */
 export function BuildingRequiredLayout() {
   const { hasBuilding, loading } = useBuildingMembership()
+  const everHadBuildingRef = useRef(hasBuilding)
+  if (hasBuilding) everHadBuildingRef.current = true
   const location = useLocation()
   const navType = useNavigationType()
   const prevPathKey = useRef<string | null>(null)
@@ -31,11 +33,17 @@ export function BuildingRequiredLayout() {
     dlog(`route:${location.pathname}${location.search} navType=${navType}`)
   }, [location.pathname, location.search, navType])
 
-  if (loading) {
+  /**
+   * Only show the loading page on the first-ever resolution. Once we know the
+   * user has a building, we don't unmount the tree on any subsequent transient
+   * loading state (e.g. supabase token refresh) — that previously remounted
+   * everything mid-photo-pick on iOS, losing the picked file.
+   */
+  if (loading && !everHadBuildingRef.current) {
     return <OnboardingLoadingPage />
   }
 
-  if (!hasBuilding) {
+  if (!hasBuilding && !everHadBuildingRef.current) {
     return <Navigate to="/" replace />
   }
 

@@ -1,14 +1,21 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/auth/use-auth'
 import type { BuildingMemberRow } from '@/types/building'
+import { dlog } from '@/lib/debug-log'
 import { supabase } from '@/lib/supabase'
 
 export function useBuildingMembership() {
   const { session } = useAuth()
+  const userId = session?.user?.id ?? null
   const [member, setMember] = useState<BuildingMemberRow | null>(null)
   const [loading, setLoading] = useState(true)
   const [tick, setTick] = useState(0)
+
+  /** Track whether we've ever resolved membership — refetches stay silent. */
+  const initializedRef = useRef(false)
+  const memberRef = useRef<BuildingMemberRow | null>(null)
+  memberRef.current = member
 
   const refetch = useCallback(() => {
     setTick((t) => t + 1)
@@ -18,35 +25,47 @@ export function useBuildingMembership() {
     let cancelled = false
 
     async function run() {
-      if (!session?.user?.id) {
+      dlog(`membership:run user=${userId ?? 'null'} init=${initializedRef.current ? '1' : '0'}`)
+      if (!userId) {
         setMember(null)
         setLoading(false)
+        initializedRef.current = true
         return
       }
 
-      setLoading(true)
+      /**
+       * Only flash a loading state on the very first resolution. Subsequent
+       * runs (token refresh, manual refetch) keep `loading=false` so callers
+       * like `BuildingRequiredLayout` don't briefly remount the whole tree
+       * mid-flow (e.g. while the iOS photo picker is in flight).
+       */
+      if (!initializedRef.current) {
+        setLoading(true)
+      }
+
       const { data, error } = await supabase
         .from('building_members')
         .select('id, building_id, user_id, role, full_name, apartment_number, phone')
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
         .maybeSingle()
 
       if (cancelled) return
 
       if (error) {
         console.error('[LOBY] building_members', error)
-        setMember(null)
+        if (!memberRef.current) setMember(null)
       } else {
         setMember(data as BuildingMemberRow | null)
       }
       setLoading(false)
+      initializedRef.current = true
     }
 
     void run()
     return () => {
       cancelled = true
     }
-  }, [session, tick])
+  }, [userId, tick])
 
   const currentBuildingId = member?.building_id ?? null
   const currentUserRole = member?.role ?? null
