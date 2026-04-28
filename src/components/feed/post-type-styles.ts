@@ -1,7 +1,7 @@
 import {
-  AlertTriangle,
   BarChart2,
   Handshake,
+  Info,
   Megaphone,
   type LucideIcon,
 } from 'lucide-react'
@@ -10,7 +10,7 @@ import type { PostTypeHe } from '@/types/feed'
 import { cn } from '@/lib/utils'
 
 export const postTypeLucideIcon: Record<PostTypeHe, LucideIcon> = {
-  דיווח: AlertTriangle,
+  דיווח: Info,
   עדכון: Megaphone,
   הצבעה: BarChart2,
   בקשה: Handshake,
@@ -32,7 +32,7 @@ export function postTypeChipLabel(type: PostTypeHe): string {
 export function typeBadgeClass(type: PostTypeHe) {
   switch (type) {
     case 'דיווח':
-      return 'bg-amber-500/15 text-amber-950 dark:bg-amber-400/20 dark:text-amber-50'
+      return 'border border-[#FF0019] bg-[#FFDEE5] text-[#FF0019]'
     case 'הצבעה':
       return 'bg-indigo-500/15 text-indigo-950 dark:bg-indigo-400/20 dark:text-indigo-50'
     case 'עדכון':
