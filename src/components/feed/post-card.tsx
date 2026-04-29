@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, Settings2 } from 'lucide-react'
+import { Heart, MessageCircle, MoveLeft, Settings2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
@@ -203,13 +203,14 @@ export function PostCard({
             <Button
               type="button"
               variant="ghost"
-              className="h-10 min-w-0 flex-1 rounded-full border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
+              className="h-10 min-w-0 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
               onClick={() => navigate(`/post/${post.id}`)}
             >
               תגובה
+              <MoveLeft className="size-4 shrink-0 opacity-90" aria-hidden />
             </Button>
             <div
-              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-muted/70 px-4 text-sm font-semibold text-foreground dark:bg-muted/50"
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 px-4 text-sm font-semibold text-foreground"
               aria-label={`${post.comments} תגובות`}
             >
               <MessageCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -224,8 +225,8 @@ export function PostCard({
               className="h-10 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
               onClick={() => navigate(`/post/${post.id}`)}
             >
-              <MessageCircle className="size-4" aria-hidden />
               תגובה
+              <MoveLeft className="size-4 shrink-0 opacity-90" aria-hidden />
             </Button>
             <Button
               type="button"

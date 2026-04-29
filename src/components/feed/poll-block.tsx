@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Ban, CheckCircle2 } from 'lucide-react'
+import { Ban, CheckCircle2, CircleChevronLeft } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import type { PollData, PollOption } from '@/types/feed'
@@ -127,8 +127,8 @@ export function PollBlock({ postId, poll, className, onVote }: Props) {
                 id={`${postId}-${opt.id}`}
                 disabled={!!submittingId}
                 className={cn(
-                  'flex min-h-11 w-full cursor-pointer items-center rounded-xl border border-border/80 bg-background/80 px-3 py-2.5 text-start text-sm shadow-xs transition-colors',
-                  'hover:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
+                  'flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-xl border border-border/80 bg-white/40 px-3 py-2.5 text-start text-sm shadow-xs transition-colors',
+                  'hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 dark:bg-white/40 dark:hover:bg-white/50',
                   submittingId && 'pointer-events-none opacity-70'
                 )}
                 onClick={(e) => {
@@ -136,11 +136,16 @@ export function PollBlock({ postId, poll, className, onVote }: Props) {
                   void voteFor(opt.id)
                 }}
               >
-                <span className="leading-snug">{opt.label}</span>
+                <CircleChevronLeft
+                  className="size-4 shrink-0 opacity-90"
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1 text-start leading-snug">
+                  {opt.label}
+                </span>
               </button>
             ))}
           </div>
-          <VoterSummaryLine voted={totalVotes} eligible={eligible} />
         </>
       )}
     </div>
@@ -185,7 +190,7 @@ function PollResults({
                 {pct}%
               </span>
             </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div
                 className={cn(
                   'h-full rounded-full bg-primary/85 transition-[width] duration-300',
