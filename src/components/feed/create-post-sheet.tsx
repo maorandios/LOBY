@@ -34,6 +34,71 @@ type Props = {
 const fieldClass =
   'flex min-h-10 w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-base outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55'
 
+type FormChromeProps = {
+  chipHe: PostTypeHe
+  headline: string
+  subtitle: string
+  onBack: () => void
+}
+
+/** Module scope so inputs are not recreated every parent render (stable focus while typing). */
+function FormChrome({ chipHe, headline, subtitle, onBack }: FormChromeProps) {
+  const TopicIcon = postTypeLucideIcon[chipHe]
+  return (
+    <div className="flex min-h-[4.25rem] w-full items-center justify-between gap-3 px-4 pb-3 pt-2">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span
+          className={cn(
+            'flex size-11 shrink-0 items-center justify-center rounded-full',
+            postTypeChipIconTrayClass(chipHe)
+          )}
+          aria-hidden
+        >
+          <TopicIcon className="size-5 shrink-0" strokeWidth={MENU_ICON_STROKE} aria-hidden />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-start">
+          <span className="text-base font-semibold text-foreground">{headline}</span>
+          <span className="text-[0.8rem] font-normal leading-snug text-muted-foreground">{subtitle}</span>
+        </span>
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
+        onClick={onBack}
+        aria-label="חזרה לבחירת סוג"
+      >
+        <MoveLeft className="size-5" strokeWidth={MENU_ICON_STROKE} aria-hidden />
+      </Button>
+    </div>
+  )
+}
+
+type PostContentFieldsProps = {
+  id: string
+  title: string
+  onTitleChange: (next: string) => void
+}
+
+function PostContentFields({ id, title, onTitleChange }: PostContentFieldsProps) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-sm font-medium text-foreground">
+        תוכן הפוסט
+      </label>
+      <textarea
+        id={id}
+        className={cn(fieldClass, 'min-h-[9rem] resize-y')}
+        dir="rtl"
+        value={title}
+        onChange={(e) => onTitleChange(e.target.value)}
+        placeholder="מה תרצו לשתף?"
+      />
+    </div>
+  )
+}
+
 function PostImagePicker({
   previewUrl,
   disabled,
@@ -191,39 +256,81 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   const sheetMeasureRef = useRef<HTMLDivElement>(null)
   const [sheetBodyMaxPx, setSheetBodyMaxPx] = useState<number | null>(null)
+  /** When true, content is taller than viewport cap — outer shell scrolls. Otherwise shell grows to content (expands upward). */
+  const [sheetOverflows, setSheetOverflows] = useState(false)
 
-  const updateSheetBodyMaxHeight = useCallback(() => {
+  /** Max sheet height: ~92% of layout viewport. Do not use min() with visualViewport — on desktop vv can be much smaller than innerHeight and traps the sheet in a short box with inner scroll. */
+  const viewportCapPx = useCallback(() => {
+    return Math.round(window.innerHeight * 0.92)
+  }, [])
+
+  const applySheetMaxHeight = useCallback(() => {
     const el = sheetMeasureRef.current
     if (!el) return
-    const innerH = window.innerHeight
-    const vvH = window.visualViewport?.height
-    const cap = Math.min(
-      Math.round(innerH * 0.92),
-      vvH != null ? Math.round(vvH) : innerH
-    )
-    const natural = el.scrollHeight
-    setSheetBodyMaxPx(Math.min(natural, cap))
-  }, [])
+    const cap = viewportCapPx()
+    const natural = Math.ceil(el.scrollHeight)
+    const next = Math.min(natural, cap)
+    const overflows = natural > cap
+
+    let deferShrinkOverflow = false
+    setSheetBodyMaxPx((prev) => {
+      const shrinkDefer = prev != null && next < prev
+
+      if (shrinkDefer) {
+        deferShrinkOverflow = true
+        requestAnimationFrame(() => {
+          const shell = sheetMeasureRef.current
+          if (!shell) return
+          const cap2 = viewportCapPx()
+          const nat2 = Math.ceil(shell.scrollHeight)
+          const n2 = Math.min(nat2, cap2)
+          setSheetBodyMaxPx(n2)
+          setSheetOverflows(nat2 > cap2)
+        })
+        return prev
+      }
+
+      return next
+    })
+    if (!deferShrinkOverflow) {
+      setSheetOverflows(overflows)
+    }
+  }, [viewportCapPx])
 
   useLayoutEffect(() => {
     if (!mounted || !entered) return
-    updateSheetBodyMaxHeight()
-    const el = sheetMeasureRef.current
-    if (!el) return
-    const ro = new ResizeObserver(() => updateSheetBodyMaxHeight())
-    ro.observe(el)
-    const onWin = () => updateSheetBodyMaxHeight()
-    window.addEventListener('resize', onWin)
-    window.visualViewport?.addEventListener('resize', onWin)
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', onWin)
-      window.visualViewport?.removeEventListener('resize', onWin)
+    applySheetMaxHeight()
+
+    const shell = sheetMeasureRef.current
+    if (!shell) return
+
+    let batchRaf: number | null = null
+    const queueMeasure = () => {
+      if (batchRaf !== null) return
+      batchRaf = requestAnimationFrame(() => {
+        batchRaf = null
+        applySheetMaxHeight()
+      })
     }
-  }, [mounted, entered, mode, updateSheetBodyMaxHeight])
+
+    const ro = new ResizeObserver(queueMeasure)
+    ro.observe(shell)
+    const onViewport = queueMeasure
+    window.addEventListener('resize', onViewport)
+    window.visualViewport?.addEventListener('resize', onViewport)
+    return () => {
+      if (batchRaf !== null) cancelAnimationFrame(batchRaf)
+      ro.disconnect()
+      window.removeEventListener('resize', onViewport)
+      window.visualViewport?.removeEventListener('resize', onViewport)
+    }
+  }, [mounted, entered, mode, applySheetMaxHeight])
 
   useLayoutEffect(() => {
-    if (!open) setSheetBodyMaxPx(null)
+    if (!open) {
+      setSheetBodyMaxPx(null)
+      setSheetOverflows(false)
+    }
   }, [open])
 
   useEffect(() => {
@@ -473,66 +580,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   const FORM_STACK =
     'mt-12 flex flex-col gap-4 px-4 pb-5 pt-0 text-start'
 
-  function FormChrome({
-    chipHe,
-    headline,
-    subtitle,
-  }: {
-    chipHe: PostTypeHe
-    headline: string
-    subtitle: string
-  }) {
-    const TopicIcon = postTypeLucideIcon[chipHe]
-    return (
-      <div className="flex min-h-[4.25rem] w-full items-center justify-between gap-3 px-4 pb-3 pt-2">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <span
-            className={cn(
-              'flex size-11 shrink-0 items-center justify-center rounded-full',
-              postTypeChipIconTrayClass(chipHe)
-            )}
-            aria-hidden
-          >
-            <TopicIcon className="size-5 shrink-0" strokeWidth={MENU_ICON_STROKE} aria-hidden />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-start">
-            <span className="text-base font-semibold text-foreground">{headline}</span>
-            <span className="text-[0.8rem] font-normal leading-snug text-muted-foreground">
-              {subtitle}
-            </span>
-          </span>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
-          onClick={() => setMode('menu')}
-          aria-label="חזרה לבחירת סוג"
-        >
-          <MoveLeft className="size-5" strokeWidth={MENU_ICON_STROKE} aria-hidden />
-        </Button>
-      </div>
-    )
-  }
-
-  function PostContentFields({ id }: { id: string }) {
-    return (
-      <div className="flex flex-col gap-2">
-        <label htmlFor={id} className="text-sm font-medium text-foreground">
-          תוכן הפוסט
-        </label>
-        <textarea
-          id={id}
-          className={cn(fieldClass, 'min-h-[9rem] resize-y')}
-          dir="rtl"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="מה תרצו לשתף?"
-        />
-      </div>
-    )
-  }
+  const handleBackToMenu = useCallback(() => setMode('menu'), [])
 
   const formReport = (
     <>
@@ -540,9 +588,14 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
         chipHe="דיווח"
         headline="דיווח"
         subtitle="תקלות, חסימת חניה, מפגע בטיחותי וכו'"
+        onBack={handleBackToMenu}
       />
       <div className={FORM_STACK}>
-        <PostContentFields id={`${photoIds.report}-content`} />
+        <PostContentFields
+          id={`${photoIds.report}-content`}
+          title={title}
+          onTitleChange={setTitle}
+        />
         <PostImagePicker
           inputId={photoIds.report}
           previewUrl={imagePreview}
@@ -573,9 +626,14 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
         chipHe="עדכון"
         headline="עדכון"
         subtitle="הודעה רשמית מטעמכם לכל דיירי הבניין"
+        onBack={handleBackToMenu}
       />
       <div className={FORM_STACK}>
-        <PostContentFields id={`${photoIds.update}-content`} />
+        <PostContentFields
+          id={`${photoIds.update}-content`}
+          title={title}
+          onTitleChange={setTitle}
+        />
         <PostImagePicker
           inputId={photoIds.update}
           previewUrl={imagePreview}
@@ -606,9 +664,14 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
         chipHe="בקשה"
         headline="בקשה"
         subtitle="פנו אל הקהילה לשיתוף פעולה או עזרה"
+        onBack={handleBackToMenu}
       />
       <div className={FORM_STACK}>
-        <PostContentFields id={`${photoIds.request}-content`} />
+        <PostContentFields
+          id={`${photoIds.request}-content`}
+          title={title}
+          onTitleChange={setTitle}
+        />
         <PostImagePicker
           inputId={photoIds.request}
           previewUrl={imagePreview}
@@ -639,9 +702,14 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
         chipHe="הצבעה"
         headline="סקר"
         subtitle="פרסמו שאלה לקהילה וגלו את דעת הקהל"
+        onBack={handleBackToMenu}
       />
       <div className={FORM_STACK}>
-        <PostContentFields id={`${photoIds.poll}-content`} />
+        <PostContentFields
+          id={`${photoIds.poll}-content`}
+          title={title}
+          onTitleChange={setTitle}
+        />
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-foreground">אפשרויות</span>
           <div className="flex flex-col gap-2">
@@ -717,15 +785,14 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
         onPointerDown={backdropPointerDown}
       />
       <div
-        ref={sheetMeasureRef}
         role="dialog"
         aria-modal="true"
         aria-label="מה תרצו לשתף?"
         dir="rtl"
         className={cn(
-          'absolute inset-x-0 bottom-0 z-10 mx-auto flex w-full max-w-lg flex-col overflow-y-auto overscroll-contain rounded-t-2xl border-t border-border',
+          'absolute inset-x-0 bottom-0 z-10 mx-auto flex w-full max-w-lg flex-col overscroll-contain rounded-t-2xl border-t border-border bg-popover shadow-lg',
           sheetBodyMaxPx == null && 'max-h-[min(92vh,100dvh)]',
-          'bg-popover pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[max(env(safe-area-inset-top,0px),0.75rem)] text-sm text-popover-foreground shadow-lg',
+          sheetOverflows ? 'overflow-y-auto' : 'overflow-hidden',
           'transform-gpu will-change-[transform,max-height]',
           'transition-[transform,max-height] duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)]',
           'motion-reduce:transition-transform motion-reduce:duration-[200ms]',
@@ -733,11 +800,16 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
         )}
         style={sheetBodyMaxPx != null ? { maxHeight: sheetBodyMaxPx } : undefined}
       >
-        {mode === 'menu' && menu}
-        {mode === 'report' && formReport}
-        {mode === 'update' && formUpdate}
-        {mode === 'request' && formRequest}
-        {mode === 'poll' && formPoll}
+        <div
+          ref={sheetMeasureRef}
+          className="flex min-w-0 w-full flex-col pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[max(env(safe-area-inset-top,0px),0.75rem)] text-sm text-popover-foreground"
+        >
+          {mode === 'menu' && menu}
+          {mode === 'report' && formReport}
+          {mode === 'update' && formUpdate}
+          {mode === 'request' && formRequest}
+          {mode === 'poll' && formPoll}
+        </div>
       </div>
     </div>,
     document.body
