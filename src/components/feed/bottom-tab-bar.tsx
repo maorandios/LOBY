@@ -14,11 +14,15 @@ import { cn } from '@/lib/utils'
 
 const POST_ACCENT = '#FF0048'
 
-/** One physical size for every tab (pixel-aligned); icon + label never overlap. */
+/** One physical size for every tab/post control (tap target); active tab adds a tighter ring only — see NavTab. */
 const ROUND_SLOT =
-  'box-border flex h-[4.25rem] w-[4.25rem] min-h-[4.25rem] min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-full p-1.5 text-center font-semibold'
+  'relative z-0 box-border flex h-[4.25rem] w-[4.25rem] min-h-[4.25rem] min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-full p-1.5 text-center font-semibold'
 
-/** Icon + label 15% larger than base `size-5` / `text-[0.5rem]`; circles unchanged. */
+/** Inner diameter of the dark ring when selected = ROUND outer ÷ 1.25 */
+const ACTIVE_RING_INSET =
+  'inset-[calc((4.25rem-4.25rem/1.25)/2)]'
+
+/** Icon + label sizing (unchanged from full-size bar). */
 const ICON_BOX = 'flex h-[1.4375rem] w-[1.4375rem] shrink-0 items-center justify-center'
 const ICON_SIZE = 'size-[1.4375rem]'
 const STROKE = 2.3
@@ -36,7 +40,7 @@ type NavItem = {
   end?: boolean
 }
 
-/** פיד → דיווחים → (פוסט) → בקשות → סקרים — order in DOM; pill uses dir=rtl so פיד is on the right. */
+/** פיד → דיווחים → (פוסט) → בקשות → סקרים — order in DOM; bar uses dir=rtl so פיד is on the right. */
 const NAV_SIDE: [NavItem, NavItem, NavItem, NavItem] = [
   { to: '/feed', label: 'פיד', icon: Home, end: true },
   { to: '/reports', label: 'דיווחים', icon: ClipboardList, end: false },
@@ -56,15 +60,30 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
             'touch-manipulation transition-[transform,color,box-shadow] duration-150 motion-reduce:transition-colors',
             'active:scale-[0.93] motion-reduce:active:scale-100',
             isActive
-              ? 'bg-transparent text-foreground ring-2 ring-zinc-700 dark:ring-zinc-400'
+              ? 'bg-transparent text-foreground'
               : 'bg-transparent text-zinc-600 hover:text-foreground dark:text-zinc-400 dark:hover:text-zinc-100'
           )
         }
       >
-        <span className={cn(ICON_BOX, 'text-inherit')}>
-          <Icon className={ICON_SIZE} strokeWidth={STROKE} aria-hidden />
-        </span>
-        <SlotLabel>{label}</SlotLabel>
+        {({ isActive }) => (
+          <>
+            {isActive ? (
+              <span
+                className={cn(
+                  'pointer-events-none absolute z-0 rounded-full ring-2 ring-zinc-700 dark:ring-zinc-400',
+                  ACTIVE_RING_INSET
+                )}
+                aria-hidden
+              />
+            ) : null}
+            <span className={cn(ICON_BOX, 'relative z-[1] text-inherit')}>
+              <Icon className={ICON_SIZE} strokeWidth={STROKE} aria-hidden />
+            </span>
+            <span className={cn(LABEL, 'relative z-[1] text-inherit')}>
+              {label}
+            </span>
+          </>
+        )}
       </NavLink>
     </div>
   )
@@ -77,28 +96,20 @@ export function BottomTabBar() {
     <>
       <div
         className={cn(
-          'pointer-events-none fixed inset-x-0 bottom-0 flex justify-center px-3',
+          'pointer-events-none fixed inset-x-0 bottom-0 w-full',
           createOpen ? 'z-40' : 'z-50'
         )}
-        style={{
-          paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))',
-        }}
       >
         <nav
           className={cn(
-            'w-full max-w-md',
+            'w-full border-t border-zinc-200/70 bg-feed-canvas backdrop-blur-xl supports-[backdrop-filter]:bg-feed-canvas/90 dark:border-white/10',
+            'pb-[env(safe-area-inset-bottom,0px)]',
             createOpen ? 'pointer-events-none' : 'pointer-events-auto'
           )}
           aria-label="ניווט ראשי"
           dir="rtl"
         >
-          <div
-            className={cn(
-              'flex items-center justify-between gap-1 rounded-full p-[5px]',
-              'bg-feed-canvas backdrop-blur-xl supports-[backdrop-filter]:bg-feed-canvas/90',
-              'shadow-[0_10px_40px_rgba(0,0,0,0.08)] ring-1 ring-zinc-300/60 dark:ring-white/10'
-            )}
-          >
+          <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-1 px-2 py-1.5 sm:px-3">
             <NavTab {...NAV_SIDE[0]} />
             <NavTab {...NAV_SIDE[1]} />
 

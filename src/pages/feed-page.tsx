@@ -22,11 +22,8 @@ import {
 } from '@/lib/building-label-cache'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
-import { cn } from '@/lib/utils'
 
 type FeedLocationState = { newInviteCode?: string }
-
-const SCROLL_BLUR_PX = 12
 
 export type FeedPageProps = {
   mode?: FeedTabMode
@@ -57,7 +54,6 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
       ? `${window.location.origin}/join/${newInviteCode}`
       : null
 
-  const [headerScrolled, setHeaderScrolled] = useState(false)
   const [posts, setPosts] = useState<Awaited<
     ReturnType<typeof fetchFeedPostsForBuilding>
   > >([])
@@ -77,15 +73,6 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
   useEffect(() => {
     if (!bid) setResolvedBuildingLabel(null)
   }, [bid])
-
-  useEffect(() => {
-    const onScroll = () => {
-      setHeaderScrolled(window.scrollY > SCROLL_BLUR_PX)
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   const loadFeed = useCallback(
     async (options?: { silent?: boolean }) => {
@@ -161,15 +148,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
       dir="rtl"
       className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]"
     >
-      <div
-        className={cn(
-          'sticky top-0 z-40 pt-[env(safe-area-inset-top)]',
-          'transition-[backdrop-filter,background-color] duration-300 ease-out',
-          headerScrolled
-            ? 'backdrop-blur-xl bg-feed-canvas/80 supports-[backdrop-filter]:bg-feed-canvas/72'
-            : 'bg-feed-canvas backdrop-blur-none'
-        )}
-      >
+      <div className="bg-feed-canvas pt-[env(safe-area-inset-top)]">
         <FeedHeader buildingName={buildingTitle} />
       </div>
 
