@@ -213,7 +213,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           buildingId: member.building_id,
           kind: 'poll',
           title: t,
-          body: b || undefined,
           options: opts,
           imageUrl,
         })
@@ -528,7 +527,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     <>
       {formHeader('הצבעה חדשה')}
       <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
-        נוסח השאלה ולפחות שתי אפשרויות
+        כותרת השאלה ולפחות שתי אפשרויות
       </p>
       <Separator />
       <div className="flex flex-col gap-3 px-4 py-4 text-start">
@@ -538,13 +537,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           dir="rtl"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-        />
-        <label className="text-sm font-medium text-foreground">הקדמה (אופציונלי)</label>
-        <textarea
-          className={cn(fieldClass, 'min-h-[80px] resize-y')}
-          dir="rtl"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
         />
         <PostImagePicker
           inputId={photoIds.poll}

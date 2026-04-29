@@ -132,22 +132,22 @@ export function PostCard({
       <div className="mt-4 flex flex-col gap-3">
         {isReport || isPoll ? (
           <div className="flex min-w-0 flex-wrap items-center gap-x-0">
-            <h2 className="min-w-0 text-start text-[1.06rem] leading-tight font-semibold tracking-tight text-foreground">
-              {post.title}
-            </h2>
             <span className="inline-flex shrink-0">
               <StatusBadge status={post.status} />
             </span>
+            <h2 className="min-w-0 flex-1 text-start text-[1.06rem] leading-tight font-medium tracking-tight text-foreground">
+              {post.title}
+            </h2>
           </div>
         ) : (
           <div>
-            <h2 className="text-[1.06rem] leading-snug font-semibold tracking-tight text-foreground">
+            <h2 className="text-[1.06rem] leading-snug font-medium tracking-tight text-foreground">
               {post.title}
             </h2>
           </div>
         )}
 
-        {post.bodyPreview && (
+        {post.bodyPreview && !isPoll && (
           <p
             className={cn(
               'text-[0.9rem] leading-relaxed text-foreground/90',

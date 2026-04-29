@@ -16,6 +16,10 @@ import {
   insertPollVote,
   mergePollVotes,
 } from '@/lib/feed-queries'
+import {
+  getCachedBuildingLabel,
+  setCachedBuildingLabel,
+} from '@/lib/building-label-cache'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { cn } from '@/lib/utils'
@@ -57,9 +61,22 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
   const [posts, setPosts] = useState<Awaited<
     ReturnType<typeof fetchFeedPostsForBuilding>
   > >([])
-  const [buildingLabel, setBuildingLabel] = useState('טוען…')
+  const bid = member?.building_id ?? null
+  const cachedBuildingLabel = useMemo(
+    () => (bid ? getCachedBuildingLabel(bid) : null),
+    [bid]
+  )
+  const [resolvedBuildingLabel, setResolvedBuildingLabel] = useState<
+    string | null
+  >(null)
+  const buildingTitle =
+    resolvedBuildingLabel ?? cachedBuildingLabel ?? 'טוען…'
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!bid) setResolvedBuildingLabel(null)
+  }, [bid])
 
   useEffect(() => {
     const onScroll = () => {
@@ -89,7 +106,8 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
           fetchBuildingLabel(bid),
           fetchFeedPostsForBuilding(bid),
         ])
-        setBuildingLabel(label)
+        setResolvedBuildingLabel(label)
+        setCachedBuildingLabel(bid, label)
         setPosts(list)
       } catch (e) {
         console.error(e)
@@ -152,7 +170,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
             : 'bg-feed-canvas backdrop-blur-none'
         )}
       >
-        <FeedHeader buildingName={buildingLabel} />
+        <FeedHeader buildingName={buildingTitle} />
       </div>
 
       <div className="-mt-px flex flex-col overflow-x-clip bg-feed-canvas">
@@ -222,7 +240,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
               </p>
             </div>
           ) : (
-            <ul className="flex flex-col gap-4">
+            <ul className="flex flex-col gap-2">
               {filtered.map((post) => (
                 <li key={post.id}>
                   <PostCard

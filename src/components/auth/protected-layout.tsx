@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
 import { useAuth } from '@/auth/use-auth'
+import { BuildingMembershipProvider } from '@/hooks/use-building-membership'
 
 import { AuthLoading } from './auth-loading'
 
@@ -17,5 +18,9 @@ export function ProtectedLayout() {
     return <Navigate to={`/login?redirect=${redirect}`} replace />
   }
 
-  return <Outlet />
+  return (
+    <BuildingMembershipProvider>
+      <Outlet />
+    </BuildingMembershipProvider>
+  )
 }

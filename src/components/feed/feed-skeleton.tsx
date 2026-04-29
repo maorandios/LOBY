@@ -28,7 +28,7 @@ function PostCardSkeleton() {
 
 export function FeedSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <ul className="flex flex-col gap-4" aria-busy="true" aria-label="טוען פוסטים">
+    <ul className="flex flex-col gap-2" aria-busy="true" aria-label="טוען פוסטים">
       {Array.from({ length: count }).map((_, i) => (
         <li key={i}>
           <PostCardSkeleton />

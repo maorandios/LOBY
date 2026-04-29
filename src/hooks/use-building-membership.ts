@@ -1,10 +1,51 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  createElement,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import { useAuth } from '@/auth/use-auth'
 import type { BuildingMemberRow } from '@/types/building'
 import { supabase } from '@/lib/supabase'
 
-export function useBuildingMembership() {
+export type BuildingMembershipValue = {
+  member: BuildingMemberRow | null
+  loading: boolean
+  refetch: () => void
+  hasBuilding: boolean
+  currentBuildingId: string | null
+  currentUserRole: string | null
+  isAdmin: boolean
+}
+
+const BuildingMembershipContext = createContext<BuildingMembershipValue | null>(
+  null
+)
+
+/**
+ * Lives once under {@link ProtectedLayout} so switching feed tabs (each with a
+ * new `FeedPage` mount) does not reset membership — the building address and
+ * member row stay available synchronously.
+ */
+export function BuildingMembershipProvider({
+  children,
+}: {
+  children: ReactNode
+}) {
+  const value = useBuildingMembershipState()
+  return createElement(
+    BuildingMembershipContext.Provider,
+    { value },
+    children
+  )
+}
+
+function useBuildingMembershipState(): BuildingMembershipValue {
   const { session } = useAuth()
   const userId = session?.user?.id ?? null
   const [member, setMember] = useState<BuildingMemberRow | null>(null)
@@ -78,4 +119,14 @@ export function useBuildingMembership() {
     currentUserRole,
     isAdmin,
   }
+}
+
+export function useBuildingMembership(): BuildingMembershipValue {
+  const ctx = useContext(BuildingMembershipContext)
+  if (!ctx) {
+    throw new Error(
+      'useBuildingMembership must be used within BuildingMembershipProvider'
+    )
+  }
+  return ctx
 }

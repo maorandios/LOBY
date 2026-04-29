@@ -12,7 +12,7 @@ import { CreatePostSheet } from '@/components/feed/create-post-sheet'
 import { useCreatePostComposer } from '@/context/create-post-composer-context'
 import { cn } from '@/lib/utils'
 
-const TEAL = '#3EBDA5'
+const POST_ACCENT = '#FF0048'
 
 /** One physical size for every tab (pixel-aligned); icon + label never overlap. */
 const ROUND_SLOT =
@@ -53,11 +53,11 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
         className={({ isActive }) =>
           cn(
             ROUND_SLOT,
-            'touch-manipulation transition-[transform,color,background-color,box-shadow] duration-150 motion-reduce:transition-colors',
+            'touch-manipulation transition-[transform,color,box-shadow] duration-150 motion-reduce:transition-colors',
             'active:scale-[0.93] motion-reduce:active:scale-100',
             isActive
-              ? 'bg-white text-zinc-900 shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
-              : 'bg-transparent text-white/90 hover:text-white'
+              ? 'bg-transparent text-foreground ring-2 ring-zinc-700 dark:ring-zinc-400'
+              : 'bg-transparent text-zinc-600 hover:text-foreground dark:text-zinc-400 dark:hover:text-zinc-100'
           )
         }
       >
@@ -95,7 +95,8 @@ export function BottomTabBar() {
           <div
             className={cn(
               'flex items-center justify-between gap-1 rounded-full p-[5px]',
-              'bg-[#232323]/98 shadow-[0_10px_40px_rgba(0,0,0,0.2)] ring-1 ring-white/[0.08] backdrop-blur-md'
+              'bg-feed-canvas backdrop-blur-xl supports-[backdrop-filter]:bg-feed-canvas/90',
+              'shadow-[0_10px_40px_rgba(0,0,0,0.08)] ring-1 ring-zinc-300/60 dark:ring-white/10'
             )}
           >
             <NavTab {...NAV_SIDE[0]} />
@@ -109,9 +110,9 @@ export function BottomTabBar() {
                   ROUND_SLOT,
                   'text-white touch-manipulation transition-[transform,box-shadow] duration-150',
                   'active:scale-[0.93] motion-reduce:active:scale-100',
-                  'shadow-[0_1px_3px_rgba(0,0,0,0.2)]'
+                  'shadow-[0_1px_3px_rgba(0,0,0,0.18)]'
                 )}
-                style={{ backgroundColor: TEAL }}
+                style={{ backgroundColor: POST_ACCENT }}
                 aria-label="פוסט חדש"
               >
                 <span className={cn(ICON_BOX, 'text-inherit')}>
