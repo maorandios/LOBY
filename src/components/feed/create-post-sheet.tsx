@@ -1,17 +1,10 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import {
-  BellRing,
-  ClipboardPlus,
-  ListChecks,
-  Megaphone,
-  MessageSquarePlus,
-  ArrowRight,
-  X,
-} from 'lucide-react'
+import { ArrowRight, MoveLeft } from 'lucide-react'
 
 import { Button, buttonVariants } from '@/components/ui/button'
+import { postTypeLucideIcon, postTypeChipIconTrayClass } from '@/components/feed/post-type-styles'
 import { Separator } from '@/components/ui/separator'
 import { useFeedRefresh } from '@/context/feed-refresh-context'
 import { createPost } from '@/lib/feed-queries'
@@ -19,12 +12,16 @@ import { uploadPostImage } from '@/lib/post-image-upload'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { cn } from '@/lib/utils'
 
+const SHEET_TRANSITION_MS = 320
+
+type Mode = 'menu' | 'report' | 'update' | 'poll' | 'request'
+
+const MENU_ICON_STROKE = 2 as const
+
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
-
-type Mode = 'menu' | 'report' | 'update' | 'poll' | 'request'
 
 const fieldClass =
   'flex min-h-10 w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-base outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55'
@@ -155,17 +152,45 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   const handleOpenChangeRef = useRef(handleOpenChange)
   handleOpenChangeRef.current = handleOpenChange
 
+  const [mounted, setMounted] = useState(false)
+  const [entered, setEntered] = useState(false)
+  const closeTimerRef = useRef<number | null>(null)
+
+  useLayoutEffect(() => {
+    if (closeTimerRef.current != null) {
+      window.clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+
+    if (open) {
+      setMounted(true)
+      setEntered(false)
+      const rf = window.requestAnimationFrame(() =>
+        window.requestAnimationFrame(() => setEntered(true))
+      )
+      return () => window.cancelAnimationFrame(rf)
+    }
+
+    setEntered(false)
+    closeTimerRef.current = window.setTimeout(() => {
+      setMounted(false)
+      closeTimerRef.current = null
+    }, SHEET_TRANSITION_MS)
+
+    return undefined
+  }, [open])
+
   useEffect(() => {
-    if (!open) return
+    if (!mounted) return
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prevOverflow
     }
-  }, [open])
+  }, [mounted])
 
   useEffect(() => {
-    if (!open) return
+    if (!mounted) return
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -174,7 +199,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [open])
+  }, [mounted])
 
   async function submit(kind: Exclude<Mode, 'menu'>) {
     setError(null)
@@ -273,103 +298,149 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     request: `${baseId}-photo-request`,
   }
 
+  const MenuIconReport = postTypeLucideIcon['דיווח']
+  const MenuIconUpdate = postTypeLucideIcon['עדכון']
+  const MenuIconPoll = postTypeLucideIcon['הצבעה']
+  const MenuIconRequest = postTypeLucideIcon['בקשה']
+
+  const MENU_CHOICE_ROW =
+    'flex h-auto min-h-[4.25rem] w-full items-center touch-manipulation justify-between gap-3 rounded-2xl border border-border/50 px-3 py-3 text-start shadow-none hover:bg-muted/50'
+
   const menu = (
     <>
-      <div className="flex flex-col gap-0.5 p-4 pb-2 text-start">
+      <div className="flex flex-col gap-0.5 px-4 pb-1 pt-4 text-start">
         <h2 className="font-heading text-lg font-medium text-foreground">
-          יצירת פריט חדש
+          מה תרצו לשתף?
         </h2>
-        <p className="text-sm text-muted-foreground text-start">
-          בחרו סוג — יש למלא כותרת ותוכן לפי הסוג
-        </p>
       </div>
-      <Separator />
-      <div className="flex flex-col gap-2 px-3 py-3">
+      <div className="flex flex-col gap-2 px-3 pb-4 pt-2">
         <Button
           type="button"
           variant="ghost"
-          className={cn(
-            'h-auto min-h-[4.25rem] w-full justify-start gap-3 rounded-2xl px-3 py-3 text-start touch-manipulation',
-            'bg-amber-50/80 dark:bg-amber-950/35'
-          )}
+          className={MENU_CHOICE_ROW}
           onClick={() => setMode('report')}
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-background/80 text-amber-900 ring-1 ring-black/5 dark:text-amber-50 dark:ring-white/10">
-            <BellRing className="size-5" aria-hidden />
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span
+            className={cn(
+              'flex size-11 shrink-0 items-center justify-center rounded-full',
+              postTypeChipIconTrayClass('דיווח')
+            )}
+          >
+            <MenuIconReport
+              className="size-5 shrink-0"
+              strokeWidth={MENU_ICON_STROKE}
+              aria-hidden
+            />
           </span>
           <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-            <span className="text-base font-semibold text-amber-900 dark:text-amber-50">
-              דיווח חדש
-            </span>
+            <span className="text-base font-semibold text-foreground">דיווח</span>
             <span className="text-[0.8rem] font-normal text-muted-foreground">
-              תקלה, חניה חסומה או סיכון — בצורה מסודרת
+              תקלות, חסימת חניה, מפגע בטיחותי וכו'
             </span>
           </span>
-          <ClipboardPlus className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          </div>
+          <MoveLeft
+            className="size-5 shrink-0 text-muted-foreground"
+            strokeWidth={MENU_ICON_STROKE}
+            aria-hidden
+          />
         </Button>
         <Button
           type="button"
           variant="ghost"
-          className={cn(
-            'h-auto min-h-[4.25rem] w-full justify-start gap-3 rounded-2xl px-3 py-3 text-start',
-            'bg-neutral-100/80 dark:bg-neutral-900/50'
-          )}
+          className={MENU_CHOICE_ROW}
           onClick={() => setMode('update')}
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-background/80 ring-1 ring-black/5 dark:ring-white/10">
-            <Megaphone className="size-5 text-neutral-900 dark:text-neutral-50" aria-hidden />
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span
+            className={cn(
+              'flex size-11 shrink-0 items-center justify-center rounded-full',
+              postTypeChipIconTrayClass('עדכון')
+            )}
+          >
+            <MenuIconUpdate
+              className="size-5 shrink-0"
+              strokeWidth={MENU_ICON_STROKE}
+              aria-hidden
+            />
           </span>
           <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-            <span className="text-base font-semibold">עדכון חדש</span>
+            <span className="text-base font-semibold text-foreground">עדכון</span>
             <span className="text-[0.8rem] font-normal text-muted-foreground">
-              הודעה רשמית לכל הדיירים
+              הודעה רשמית מטעמכם לכל דיירי הבניין
             </span>
           </span>
-          <ClipboardPlus className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          </div>
+          <MoveLeft
+            className="size-5 shrink-0 text-muted-foreground"
+            strokeWidth={MENU_ICON_STROKE}
+            aria-hidden
+          />
         </Button>
         <Button
           type="button"
           variant="ghost"
-          className={cn(
-            'h-auto min-h-[4.25rem] w-full justify-start gap-3 rounded-2xl px-3 py-3 text-start',
-            'bg-indigo-50/85 dark:bg-indigo-950/40'
-          )}
-          onClick={() => setMode('poll')}
-        >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-background/80 text-indigo-950 ring-1 ring-black/5 dark:text-indigo-50 dark:ring-white/10">
-            <ListChecks className="size-5" aria-hidden />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-            <span className="text-base font-semibold text-indigo-950 dark:text-indigo-50">
-              הצבעה חדשה
-            </span>
-            <span className="text-[0.8rem] font-normal text-muted-foreground">
-              שאלת כן/לא או בחירה בין אפשרויות
-            </span>
-          </span>
-          <ClipboardPlus className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className={cn(
-            'h-auto min-h-[4.25rem] w-full justify-start gap-3 rounded-2xl px-3 py-3 text-start',
-            'bg-emerald-50/85 dark:bg-emerald-950/35'
-          )}
+          className={MENU_CHOICE_ROW}
           onClick={() => setMode('request')}
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-background/80 text-emerald-950 ring-1 ring-black/5 dark:text-emerald-50 dark:ring-white/10">
-            <MessageSquarePlus className="size-5" aria-hidden />
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span
+            className={cn(
+              'flex size-11 shrink-0 items-center justify-center rounded-full',
+              postTypeChipIconTrayClass('בקשה')
+            )}
+          >
+            <MenuIconRequest
+              className="size-5 shrink-0"
+              strokeWidth={MENU_ICON_STROKE}
+              aria-hidden
+            />
           </span>
           <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-            <span className="text-base font-semibold text-emerald-950 dark:text-emerald-50">
-              בקשה חדשה
-            </span>
+            <span className="text-base font-semibold text-foreground">בקשה</span>
             <span className="text-[0.8rem] font-normal text-muted-foreground">
-              עזרה קהילתית או תיאום בין שכנים
+              פנו אל הקהילה לשיתוף פעולה או עזרה
             </span>
           </span>
-          <ClipboardPlus className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          </div>
+          <MoveLeft
+            className="size-5 shrink-0 text-muted-foreground"
+            strokeWidth={MENU_ICON_STROKE}
+            aria-hidden
+          />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className={MENU_CHOICE_ROW}
+          onClick={() => setMode('poll')}
+        >
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span
+            className={cn(
+              'flex size-11 shrink-0 items-center justify-center rounded-full',
+              postTypeChipIconTrayClass('הצבעה')
+            )}
+          >
+            <MenuIconPoll
+              className="size-5 shrink-0"
+              strokeWidth={MENU_ICON_STROKE}
+              aria-hidden
+            />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+            <span className="text-base font-semibold text-foreground">סקר</span>
+            <span className="text-[0.8rem] font-normal text-muted-foreground">
+              פרסמו שאלה לקהילה וגלו את דעת הקהל
+            </span>
+          </span>
+          </div>
+          <MoveLeft
+            className="size-5 shrink-0 text-muted-foreground"
+            strokeWidth={MENU_ICON_STROKE}
+            aria-hidden
+          />
         </Button>
       </div>
     </>
@@ -393,9 +464,9 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   const formReport = (
     <>
-      {formHeader('דיווח חדש')}
+      {formHeader('דיווח')}
       <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
-        כותרת קצרה ותיאור
+        תקלות, חסימת חניה, מפגע בטיחותי וכו'
       </p>
       <Separator />
       <div className="flex flex-col gap-3 px-4 py-4 text-start">
@@ -441,9 +512,9 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   const formUpdate = (
     <>
-      {formHeader('עדכון חדש')}
+      {formHeader('עדכון')}
       <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
-        הודעה לכל הדיירים
+        הודעה רשמית מטעמכם לכל דיירי הבניין
       </p>
       <Separator />
       <div className="flex flex-col gap-3 px-4 py-4 text-start">
@@ -487,7 +558,10 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   const formRequest = (
     <>
-      {formHeader('בקשה חדשה')}
+      {formHeader('בקשה')}
+      <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
+        פנו אל הקהילה לשיתוף פעולה או עזרה
+      </p>
       <Separator />
       <div className="flex flex-col gap-3 px-4 py-4 text-start">
         <label className="text-sm font-medium text-foreground">כותרת</label>
@@ -525,9 +599,9 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   const formPoll = (
     <>
-      {formHeader('הצבעה חדשה')}
+      {formHeader('סקר')}
       <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
-        כותרת השאלה ולפחות שתי אפשרויות
+        פרסמו שאלה לקהילה וגלו את דעת הקהל
       </p>
       <Separator />
       <div className="flex flex-col gap-3 px-4 py-4 text-start">
@@ -587,7 +661,12 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     </>
   )
 
-  if (!open) return null
+  if (!mounted) return null
+
+  function backdropPointerDown(e: PointerEvent<HTMLDivElement>) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    if (e.target === e.currentTarget) handleOpenChange(false)
+  }
 
   return createPortal(
     <div
@@ -597,29 +676,28 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     >
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-black/45"
+        className={cn(
+          'absolute inset-0 z-0 bg-black/[0.58] backdrop-blur-md backdrop-saturate-75 [-webkit-backdrop-filter:blur(12px)]',
+          'transition-[opacity,backdrop-filter] duration-[320ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
+          'motion-reduce:transition-opacity motion-reduce:duration-[200ms]',
+          entered ? 'opacity-100' : 'opacity-0'
+        )}
+        onPointerDown={backdropPointerDown}
       />
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="יצירת פריט חדש"
+        aria-label="מה תרצו לשתף?"
         dir="rtl"
         className={cn(
-          'absolute inset-x-0 bottom-0 mx-auto flex max-h-[min(92vh,100dvh)] w-full max-w-lg flex-col overflow-y-auto overscroll-contain rounded-t-2xl border-t border-border',
-          'bg-popover pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[max(env(safe-area-inset-top,0px),0.75rem)] text-sm text-popover-foreground shadow-lg'
+          'absolute inset-x-0 bottom-0 z-10 mx-auto flex max-h-[min(92vh,100dvh)] w-full max-w-lg flex-col overflow-y-auto overscroll-contain rounded-t-2xl border-t border-border',
+          'bg-popover pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[max(env(safe-area-inset-top,0px),0.75rem)] text-sm text-popover-foreground shadow-lg',
+          'transform-gpu will-change-transform',
+          'transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)]',
+          'motion-reduce:transition-transform motion-reduce:duration-[200ms]',
+          entered ? 'translate-y-0' : 'translate-y-[105%]'
         )}
       >
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="absolute top-3 end-3 z-10 shrink-0 rounded-full"
-          onClick={() => handleOpenChange(false)}
-          aria-label="סגירה"
-        >
-          <X className="size-4" aria-hidden />
-          <span className="sr-only">סגירה</span>
-        </Button>
         {mode === 'menu' && menu}
         {mode === 'report' && formReport}
         {mode === 'update' && formUpdate}
