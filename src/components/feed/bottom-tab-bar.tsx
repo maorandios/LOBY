@@ -1,23 +1,20 @@
-import { type ReactNode } from 'react'
 import {
-  BarChart2,
-  ClipboardList,
-  Handshake,
-  Home,
-  Megaphone,
-  Plus,
+  CirclePlus,
+  Rss,
+  type LucideIcon,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 import { CreatePostSheet } from '@/components/feed/create-post-sheet'
+import { postTypeLucideIcon } from '@/components/feed/post-type-styles'
 import { useCreatePostComposer } from '@/context/create-post-composer-context'
 import { cn } from '@/lib/utils'
 
 const POST_ACCENT = '#FF0048'
 
-/** Post FAB circle — floats above פיד column; active nav uses a dot instead of rings — see NavTab. */
+/** Post FAB — icon only, above פיד column */
 const FAB_ROUND_SLOT =
-  'relative z-auto box-border flex h-[4.25rem] w-[4.25rem] min-h-[4.25rem] min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-full p-1.5 text-center font-semibold'
+  'relative z-auto box-border flex h-[4.25rem] w-[4.25rem] min-h-[4.25rem] min-w-[4.25rem] shrink-0 items-center justify-center rounded-full p-1.5 touch-manipulation'
 
 /** Nav tabs: tall tap targets, dot under label for active — no circular chrome. */
 const TAB_SLOT =
@@ -25,28 +22,26 @@ const TAB_SLOT =
 
 const ICON_BOX = 'flex h-[1.4375rem] w-[1.4375rem] shrink-0 items-center justify-center'
 const ICON_SIZE = 'size-[1.4375rem]'
+/** Post FAB — 1.5× chip icon size */
+const FAB_ICON_SIZE = 'size-[2.15625rem]'
 const STROKE = 2.3
 const LABEL =
   'w-full min-h-0 max-w-full px-0.5 text-[0.575rem] leading-tight [overflow-wrap:anywhere]'
 
-function SlotLabel({ children }: { children: ReactNode }) {
-  return <span className={cn(LABEL, 'text-inherit')}>{children}</span>
-}
-
 type NavItem = {
   to: string
   label: string
-  icon: typeof Home
+  icon: LucideIcon
   end?: boolean
 }
 
-/** פיד … סקרים — dir=rtl: first DOM item aligns to visual start (often right edge on mobile). Order matches bar left→right Hebrew UX. */
+/** פיד … סקרים — dir=rtl: first DOM item aligns to visual start (often right edge on mobile). Icons match post type chips (post-type-styles) plus Rss for feed. */
 const NAV_ITEMS: NavItem[] = [
-  { to: '/feed', label: 'פיד', icon: Home, end: true },
-  { to: '/reports', label: 'דיווחים', icon: ClipboardList, end: false },
-  { to: '/updates', label: 'עדכונים', icon: Megaphone, end: false },
-  { to: '/requests', label: 'בקשות', icon: Handshake, end: false },
-  { to: '/votes', label: 'סקרים', icon: BarChart2, end: false },
+  { to: '/feed', label: 'פיד', icon: Rss, end: true },
+  { to: '/reports', label: 'דיווחים', icon: postTypeLucideIcon['דיווח'], end: false },
+  { to: '/updates', label: 'עדכונים', icon: postTypeLucideIcon['עדכון'], end: false },
+  { to: '/requests', label: 'בקשות', icon: postTypeLucideIcon['בקשה'], end: false },
+  { to: '/votes', label: 'סקרים', icon: postTypeLucideIcon['הצבעה'], end: false },
 ]
 
 function NavTab({ to, label, icon: Icon, end }: NavItem) {
@@ -115,15 +110,16 @@ export function BottomTabBar() {
                     onClick={() => setCreateOpen(true)}
                     className={cn(
                       FAB_ROUND_SLOT,
-                      'text-white touch-manipulation transition-transform duration-150 active:scale-[0.93] motion-reduce:transition-colors'
+                      'text-white transition-transform duration-150 active:scale-[0.93] motion-reduce:transition-colors'
                     )}
                     style={{ backgroundColor: POST_ACCENT }}
                     aria-label="פוסט חדש"
                   >
-                    <span className={cn(ICON_BOX, 'text-inherit')}>
-                      <Plus className={ICON_SIZE} strokeWidth={STROKE} aria-hidden />
-                    </span>
-                    <SlotLabel>פוסט</SlotLabel>
+                    <CirclePlus
+                      className={cn(FAB_ICON_SIZE, 'shrink-0')}
+                      strokeWidth={STROKE}
+                      aria-hidden
+                    />
                   </button>
                 ) : null}
               </div>
