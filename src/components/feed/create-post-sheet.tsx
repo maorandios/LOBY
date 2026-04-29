@@ -1,11 +1,19 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, MoveLeft } from 'lucide-react'
+import { Images, MoveLeft } from 'lucide-react'
 
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { postTypeLucideIcon, postTypeChipIconTrayClass } from '@/components/feed/post-type-styles'
-import { Separator } from '@/components/ui/separator'
+import type { PostTypeHe } from '@/types/feed'
 import { useFeedRefresh } from '@/context/feed-refresh-context'
 import { createPost } from '@/lib/feed-queries'
 import { uploadPostImage } from '@/lib/post-image-upload'
@@ -40,11 +48,7 @@ function PostImagePicker({
   onClear: () => void
 }) {
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-foreground">תמונה (אופציונלי)</span>
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        צילום או העלאה — עד 5MB (JPEG, PNG…)
-      </p>
+    <div className="flex flex-col">
       <input
         id={inputId}
         type="file"
@@ -62,20 +66,18 @@ function PostImagePicker({
         <label
           htmlFor={inputId}
           className={cn(
-            buttonVariants({ variant: 'outline' }),
-            'h-11 w-full cursor-pointer justify-center rounded-xl font-medium',
+            'relative flex min-h-[5.5rem] w-full cursor-pointer touch-manipulation flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-muted-foreground/70 bg-muted/25 px-8 py-10 text-base font-semibold text-foreground shadow-none transition-colors hover:bg-muted/40',
+            'dark:border-muted-foreground/65',
+            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/50 motion-reduce:transition-none',
             disabled && 'pointer-events-none opacity-50'
           )}
         >
-          צילום או העלאה מתמונות
+          <Images className="size-7 shrink-0 text-muted-foreground" strokeWidth={2} aria-hidden />
+          <span className="text-center leading-tight">לחצו כאן להוספת תמונה</span>
         </label>
       ) : (
         <div className="relative overflow-hidden rounded-xl border border-border/60">
-          <img
-            src={previewUrl}
-            alt=""
-            className="max-h-52 w-full object-cover"
-          />
+          <img src={previewUrl} alt="" className="max-h-52 w-full object-cover" />
           <Button
             type="button"
             variant="secondary"
@@ -103,7 +105,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
   const [pollOptions, setPollOptions] = useState<string[]>(['', ''])
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -137,7 +138,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   function resetForm() {
     setTitle('')
-    setBody('')
     setPollOptions(['', ''])
     clearImage()
     setError(null)
@@ -189,6 +189,43 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     }
   }, [mounted])
 
+  const sheetMeasureRef = useRef<HTMLDivElement>(null)
+  const [sheetBodyMaxPx, setSheetBodyMaxPx] = useState<number | null>(null)
+
+  const updateSheetBodyMaxHeight = useCallback(() => {
+    const el = sheetMeasureRef.current
+    if (!el) return
+    const innerH = window.innerHeight
+    const vvH = window.visualViewport?.height
+    const cap = Math.min(
+      Math.round(innerH * 0.92),
+      vvH != null ? Math.round(vvH) : innerH
+    )
+    const natural = el.scrollHeight
+    setSheetBodyMaxPx(Math.min(natural, cap))
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!mounted || !entered) return
+    updateSheetBodyMaxHeight()
+    const el = sheetMeasureRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => updateSheetBodyMaxHeight())
+    ro.observe(el)
+    const onWin = () => updateSheetBodyMaxHeight()
+    window.addEventListener('resize', onWin)
+    window.visualViewport?.addEventListener('resize', onWin)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', onWin)
+      window.visualViewport?.removeEventListener('resize', onWin)
+    }
+  }, [mounted, entered, mode, updateSheetBodyMaxHeight])
+
+  useLayoutEffect(() => {
+    if (!open) setSheetBodyMaxPx(null)
+  }, [open])
+
   useEffect(() => {
     if (!mounted) return
     const onKeyDown = (e: KeyboardEvent) => {
@@ -208,9 +245,8 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
       return
     }
     const t = title.trim()
-    const b = body.trim()
     if (!t) {
-      setError('יש למלא כותרת.')
+      setError('יש למלא תוכן הפוסט.')
       return
     }
 
@@ -242,39 +278,27 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           imageUrl,
         })
       } else if (kind === 'report') {
-        if (!b) {
-          setError('יש למלא תיאור הדיווח.')
-          return
-        }
         res = await createPost({
           buildingId: member.building_id,
           kind: 'report',
           title: t,
-          body: b,
+          body: t,
           imageUrl,
         })
       } else if (kind === 'update') {
-        if (!b) {
-          setError('יש למלא תוכן העדכון.')
-          return
-        }
         res = await createPost({
           buildingId: member.building_id,
           kind: 'update',
           title: t,
-          body: b,
+          body: t,
           imageUrl,
         })
       } else {
-        if (!b) {
-          setError('יש למלא תיאור הבקשה.')
-          return
-        }
         res = await createPost({
           buildingId: member.building_id,
           kind: 'request',
           title: t,
-          body: b,
+          body: t,
           imageUrl,
         })
       }
@@ -446,46 +470,79 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     </>
   )
 
-  const formHeader = (label: string) => (
-    <div className="flex items-center gap-2 px-4 pb-2">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="shrink-0 rounded-full"
-        onClick={() => setMode('menu')}
-        aria-label="חזרה"
-      >
-        <ArrowRight className="size-5" aria-hidden />
-      </Button>
-      <h2 className="font-heading text-lg font-medium text-foreground">{label}</h2>
-    </div>
-  )
+  const FORM_STACK =
+    'mt-12 flex flex-col gap-4 px-4 pb-5 pt-0 text-start'
 
-  const formReport = (
-    <>
-      {formHeader('דיווח')}
-      <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
-        תקלות, חסימת חניה, מפגע בטיחותי וכו'
-      </p>
-      <Separator />
-      <div className="flex flex-col gap-3 px-4 py-4 text-start">
-        <label className="text-sm font-medium text-foreground">כותרת</label>
-        <input
-          className={fieldClass}
+  function FormChrome({
+    chipHe,
+    headline,
+    subtitle,
+  }: {
+    chipHe: PostTypeHe
+    headline: string
+    subtitle: string
+  }) {
+    const TopicIcon = postTypeLucideIcon[chipHe]
+    return (
+      <div className="flex min-h-[4.25rem] w-full items-center justify-between gap-3 px-4 pb-3 pt-2">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span
+            className={cn(
+              'flex size-11 shrink-0 items-center justify-center rounded-full',
+              postTypeChipIconTrayClass(chipHe)
+            )}
+            aria-hidden
+          >
+            <TopicIcon className="size-5 shrink-0" strokeWidth={MENU_ICON_STROKE} aria-hidden />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-start">
+            <span className="text-base font-semibold text-foreground">{headline}</span>
+            <span className="text-[0.8rem] font-normal leading-snug text-muted-foreground">
+              {subtitle}
+            </span>
+          </span>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
+          onClick={() => setMode('menu')}
+          aria-label="חזרה לבחירת סוג"
+        >
+          <MoveLeft className="size-5" strokeWidth={MENU_ICON_STROKE} aria-hidden />
+        </Button>
+      </div>
+    )
+  }
+
+  function PostContentFields({ id }: { id: string }) {
+    return (
+      <div className="flex flex-col gap-2">
+        <label htmlFor={id} className="text-sm font-medium text-foreground">
+          תוכן הפוסט
+        </label>
+        <textarea
+          id={id}
+          className={cn(fieldClass, 'min-h-[9rem] resize-y')}
           dir="rtl"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="לדוגמה: תאורה לא עובדת בחניון"
+          placeholder="מה תרצו לשתף?"
         />
-        <label className="text-sm font-medium text-foreground">תיאור</label>
-        <textarea
-          className={cn(fieldClass, 'min-h-[120px] resize-y')}
-          dir="rtl"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="פרטו מה ראיתם ומתי…"
-        />
+      </div>
+    )
+  }
+
+  const formReport = (
+    <>
+      <FormChrome
+        chipHe="דיווח"
+        headline="דיווח"
+        subtitle="תקלות, חסימת חניה, מפגע בטיחותי וכו'"
+      />
+      <div className={FORM_STACK}>
+        <PostContentFields id={`${photoIds.report}-content`} />
         <PostImagePicker
           inputId={photoIds.report}
           previewUrl={imagePreview}
@@ -512,26 +569,13 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   const formUpdate = (
     <>
-      {formHeader('עדכון')}
-      <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
-        הודעה רשמית מטעמכם לכל דיירי הבניין
-      </p>
-      <Separator />
-      <div className="flex flex-col gap-3 px-4 py-4 text-start">
-        <label className="text-sm font-medium text-foreground">כותרת</label>
-        <input
-          className={fieldClass}
-          dir="rtl"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-        <label className="text-sm font-medium text-foreground">תוכן</label>
-        <textarea
-          className={cn(fieldClass, 'min-h-[120px] resize-y')}
-          dir="rtl"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-        />
+      <FormChrome
+        chipHe="עדכון"
+        headline="עדכון"
+        subtitle="הודעה רשמית מטעמכם לכל דיירי הבניין"
+      />
+      <div className={FORM_STACK}>
+        <PostContentFields id={`${photoIds.update}-content`} />
         <PostImagePicker
           inputId={photoIds.update}
           previewUrl={imagePreview}
@@ -558,21 +602,13 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   const formRequest = (
     <>
-      {formHeader('בקשה')}
-      <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
-        פנו אל הקהילה לשיתוף פעולה או עזרה
-      </p>
-      <Separator />
-      <div className="flex flex-col gap-3 px-4 py-4 text-start">
-        <label className="text-sm font-medium text-foreground">כותרת</label>
-        <input className={fieldClass} dir="rtl" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <label className="text-sm font-medium text-foreground">תיאור הבקשה</label>
-        <textarea
-          className={cn(fieldClass, 'min-h-[120px] resize-y')}
-          dir="rtl"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-        />
+      <FormChrome
+        chipHe="בקשה"
+        headline="בקשה"
+        subtitle="פנו אל הקהילה לשיתוף פעולה או עזרה"
+      />
+      <div className={FORM_STACK}>
+        <PostContentFields id={`${photoIds.request}-content`} />
         <PostImagePicker
           inputId={photoIds.request}
           previewUrl={imagePreview}
@@ -599,19 +635,40 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   const formPoll = (
     <>
-      {formHeader('סקר')}
-      <p className="px-4 pb-3 text-start text-sm text-muted-foreground">
-        פרסמו שאלה לקהילה וגלו את דעת הקהל
-      </p>
-      <Separator />
-      <div className="flex flex-col gap-3 px-4 py-4 text-start">
-        <label className="text-sm font-medium text-foreground">שאלה / כותרת</label>
-        <input
-          className={fieldClass}
-          dir="rtl"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+      <FormChrome
+        chipHe="הצבעה"
+        headline="סקר"
+        subtitle="פרסמו שאלה לקהילה וגלו את דעת הקהל"
+      />
+      <div className={FORM_STACK}>
+        <PostContentFields id={`${photoIds.poll}-content`} />
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-foreground">אפשרויות</span>
+          <div className="flex flex-col gap-2">
+            {pollOptions.map((line, i) => (
+              <input
+                key={i}
+                className={fieldClass}
+                dir="rtl"
+                value={line}
+                placeholder={`אפשרות ${i + 1}`}
+                onChange={(e) => {
+                  const next = [...pollOptions]
+                  next[i] = e.target.value
+                  setPollOptions(next)
+                }}
+              />
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 rounded-full"
+            onClick={() => setPollOptions((o) => [...o, ''])}
+          >
+            הוספת אפשרות
+          </Button>
+        </div>
         <PostImagePicker
           inputId={photoIds.poll}
           previewUrl={imagePreview}
@@ -619,31 +676,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           onPick={handleImagePick}
           onClear={clearImage}
         />
-        <p className="text-sm font-medium text-foreground">אפשרויות</p>
-        <div className="flex flex-col gap-2">
-          {pollOptions.map((line, i) => (
-            <input
-              key={i}
-              className={fieldClass}
-              dir="rtl"
-              value={line}
-              placeholder={`אפשרות ${i + 1}`}
-              onChange={(e) => {
-                const next = [...pollOptions]
-                next[i] = e.target.value
-                setPollOptions(next)
-              }}
-            />
-          ))}
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 rounded-full"
-          onClick={() => setPollOptions((o) => [...o, ''])}
-        >
-          הוספת אפשרות
-        </Button>
         {error ? (
           <p className="text-sm text-destructive" role="alert">
             {error}
@@ -655,7 +687,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           disabled={submitting}
           onClick={() => void submit('poll')}
         >
-          {submitting ? 'שולח…' : 'פרסום הצבעה'}
+          {submitting ? 'שולח…' : 'פרסום סקר'}
         </Button>
       </div>
     </>
@@ -685,18 +717,21 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
         onPointerDown={backdropPointerDown}
       />
       <div
+        ref={sheetMeasureRef}
         role="dialog"
         aria-modal="true"
         aria-label="מה תרצו לשתף?"
         dir="rtl"
         className={cn(
-          'absolute inset-x-0 bottom-0 z-10 mx-auto flex max-h-[min(92vh,100dvh)] w-full max-w-lg flex-col overflow-y-auto overscroll-contain rounded-t-2xl border-t border-border',
+          'absolute inset-x-0 bottom-0 z-10 mx-auto flex w-full max-w-lg flex-col overflow-y-auto overscroll-contain rounded-t-2xl border-t border-border',
+          sheetBodyMaxPx == null && 'max-h-[min(92vh,100dvh)]',
           'bg-popover pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[max(env(safe-area-inset-top,0px),0.75rem)] text-sm text-popover-foreground shadow-lg',
-          'transform-gpu will-change-transform',
-          'transition-transform duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)]',
+          'transform-gpu will-change-[transform,max-height]',
+          'transition-[transform,max-height] duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)]',
           'motion-reduce:transition-transform motion-reduce:duration-[200ms]',
           entered ? 'translate-y-0' : 'translate-y-[105%]'
         )}
+        style={sheetBodyMaxPx != null ? { maxHeight: sheetBodyMaxPx } : undefined}
       >
         {mode === 'menu' && menu}
         {mode === 'report' && formReport}
