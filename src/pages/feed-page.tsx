@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { Loader2 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 
@@ -22,6 +28,8 @@ import {
 } from '@/lib/building-label-cache'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
+import { useFeedSentinelLoadMore } from '@/hooks/use-feed-sentinel-load-more'
+import type { FeedPost } from '@/types/feed'
 
 type FeedLocationState = { newInviteCode?: string }
 
@@ -56,9 +64,9 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
       ? `${window.location.origin}/join/${newInviteCode}`
       : null
 
-  const [posts, setPosts] = useState<Awaited<
-    ReturnType<typeof fetchFeedPostsForBuilding>
-  > >([])
+  const [posts, setPosts] = useState<FeedPost[]>([])
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const bid = member?.building_id ?? null
   const cachedBuildingLabel = useMemo(
     () => (bid ? getCachedBuildingLabel(bid) : null),
@@ -72,6 +80,12 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const postsLenRef = useRef(0)
+  useEffect(() => {
+    postsLenRef.current = posts.length
+  }, [posts.length])
+
   useEffect(() => {
     if (!bid) setResolvedBuildingLabel(null)
   }, [bid])
@@ -82,6 +96,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
       const silent = options?.silent === true
       if (!bid) {
         setPosts([])
+        setHasMore(false)
         // Avoid empty-state flash before building_id exists (membership still hydrating).
         if (!silent && !membershipLoading) setLoading(false)
         return
@@ -90,14 +105,16 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
         setLoading(true)
         setLoadError(null)
       }
+      setLoadingMore(false)
       try {
-        const [label, list] = await Promise.all([
+        const [label, page] = await Promise.all([
           fetchBuildingLabel(bid),
-          fetchFeedPostsForBuilding(bid),
+          fetchFeedPostsForBuilding(bid, 0),
         ])
         setResolvedBuildingLabel(label)
         setCachedBuildingLabel(bid, label)
-        setPosts(list)
+        setPosts(page.posts)
+        setHasMore(page.hasMore)
       } catch (e) {
         console.error(e)
         if (!silent) setLoadError('לא ניתן לטעון את הפיד כרגע')
@@ -107,6 +124,41 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     },
     [member?.building_id, membershipLoading]
   )
+
+  const loadMore = useCallback(async () => {
+    const id = member?.building_id
+    if (
+      !id ||
+      loading ||
+      loadingMore ||
+      !hasMore
+    ) {
+      return
+    }
+    const offsetForPage = postsLenRef.current
+    setLoadingMore(true)
+    try {
+      const page = await fetchFeedPostsForBuilding(id, offsetForPage)
+      setPosts((prev) => {
+        const offset = prev.length
+        if (offset !== offsetForPage) return prev
+        const seen = new Set(prev.map((p) => p.id))
+        const merged = [...prev]
+        for (const post of page.posts) {
+          if (!seen.has(post.id)) {
+            merged.push(post)
+            seen.add(post.id)
+          }
+        }
+        return merged
+      })
+      setHasMore(page.hasMore)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [member?.building_id, loading, loadingMore, hasMore])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- async feed load triggers state updates
@@ -123,6 +175,33 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     [posts, mode]
   )
 
+  /** Tab filter: first pages may have no matches — fetch until some appear or feed ends. */
+  useEffect(() => {
+    if (
+      mode === 'all' ||
+      loading ||
+      loadingMore ||
+      !hasMore ||
+      filtered.length > 0
+    ) {
+      return
+    }
+    if (posts.length === 0) return
+    void loadMore()
+  }, [mode, loading, loadingMore, hasMore, filtered.length, posts.length, loadMore])
+
+  /** Short viewport / sentinel still visible — IO may not refire until scroll. */
+  useEffect(() => {
+    if (!hasMore || loadingMore || loading) return
+    const id = requestAnimationFrame(() => {
+      const el = sentinelRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      if (rect.top < window.innerHeight + 220) void loadMore()
+    })
+    return () => cancelAnimationFrame(id)
+  }, [posts.length, hasMore, loadingMore, loading, loadMore])
+
   const handlePollVote = useCallback(
     async (postId: string, optionId: string) => {
       const res = await insertPollVote(postId, optionId)
@@ -138,12 +217,45 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     []
   )
 
+  const showSentinelFooter =
+    (filtered.length > 0 && hasMore) ||
+    (mode !== 'all' && filtered.length === 0 && hasMore && posts.length > 0)
+
+  useFeedSentinelLoadMore({
+    sentinelRef,
+    enabled: Boolean(
+      showSentinelFooter &&
+      member?.building_id &&
+      !loading &&
+      !loadError
+    ),
+    onLoadMore: loadMore,
+  })
+
   const pullOpacity = refreshing
     ? 1
     : Math.min(Math.max((pullPx - 8) / 56, 0), 1)
   const stripH = refreshing
     ? 44
     : Math.round(Math.min(Math.max((pullPx - 4) * 1.06, 0), 92))
+
+  const noPostsInBuilding = !loading && !membershipLoading && posts.length === 0 && !hasMore
+
+  const tabFilterEmptyLoaded =
+    !loading &&
+    !membershipLoading &&
+    mode !== 'all' &&
+    filtered.length === 0 &&
+    !hasMore &&
+    posts.length > 0
+
+  const tabFilterStillSearching =
+    !loading &&
+    !membershipLoading &&
+    mode !== 'all' &&
+    filtered.length === 0 &&
+    hasMore &&
+    posts.length > 0
 
   return (
     <div
@@ -211,7 +323,16 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
             </div>
           ) : membershipLoading || loading ? (
             <FeedSkeleton count={4} />
-          ) : filtered.length === 0 ? (
+          ) : noPostsInBuilding ? (
+            <div className="flex min-h-[45vh] flex-col items-center justify-center gap-2 px-4 text-center">
+              <p className="text-base font-medium text-foreground">
+                אין פריטים להצגה
+              </p>
+              <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+                {emptyHint(mode)}
+              </p>
+            </div>
+          ) : tabFilterEmptyLoaded ? (
             <div className="flex min-h-[45vh] flex-col items-center justify-center gap-2 px-4 text-center">
               <p className="text-base font-medium text-foreground">
                 אין פריטים להצגה
@@ -221,18 +342,52 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
               </p>
             </div>
           ) : (
-            <ul className="flex flex-col gap-2">
-              {filtered.map((post) => (
-                <li key={post.id}>
-                  <PostCard
-                    post={post}
-                    onPollVote={handlePollVote}
-                    isAdmin={isAdmin}
-                    onAdminSuccess={() => void loadFeed({ silent: true })}
+            <>
+              {filtered.length === 0 && tabFilterStillSearching ? (
+                <div
+                  role="status"
+                  className="mb-6 flex flex-col items-center gap-3 py-8 text-muted-foreground"
+                >
+                  <Loader2
+                    className="size-8 motion-reduce:animate-none animate-spin"
+                    strokeWidth={2}
+                    aria-hidden
                   />
-                </li>
-              ))}
-            </ul>
+                  <p className="text-sm">טוען פוסטים נוספים…</p>
+                </div>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {filtered.map((post) => (
+                    <li key={post.id}>
+                      <PostCard
+                        post={post}
+                        onPollVote={handlePollVote}
+                        isAdmin={isAdmin}
+                        onAdminSuccess={() => void loadFeed({ silent: true })}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {showSentinelFooter ? (
+                <div
+                  ref={sentinelRef}
+                  className="flex min-h-10 flex-col items-center justify-center py-3"
+                  aria-hidden
+                >
+                  {loadingMore ? (
+                    <Loader2
+                      className="size-7 text-muted-foreground motion-reduce:animate-none animate-spin"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                  ) : (
+                    <span className="sr-only">טעינת פוסטים נוספים</span>
+                  )}
+                </div>
+              ) : null}
+            </>
           )}
         </main>
       </div>

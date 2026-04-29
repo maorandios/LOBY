@@ -170,9 +170,19 @@ export async function fetchMemberMap(
   return map
 }
 
+/** Page size for feed infinite scroll (initial + each “load more”). */
+export const FEED_POSTS_PAGE_SIZE = 20
+
+export type FetchFeedPostsPageResult = {
+  posts: FeedPost[]
+  hasMore: boolean
+}
+
 export async function fetchFeedPostsForBuilding(
-  buildingId: string
-): Promise<FeedPost[]> {
+  buildingId: string,
+  offset = 0
+): Promise<FetchFeedPostsPageResult> {
+  const limit = FEED_POSTS_PAGE_SIZE
   const [memberMap, memberCount, postsRes] = await Promise.all([
     fetchMemberMap(buildingId),
     fetchBuildingMemberCount(buildingId),
@@ -202,12 +212,13 @@ export async function fetchFeedPostsForBuilding(
       )
       .eq('building_id', buildingId)
       .order('pinned', { ascending: false })
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1),
   ])
 
   if (postsRes.error) {
     console.error('[LOBY] fetchFeedPostsForBuilding', postsRes.error)
-    return []
+    return { posts: [], hasMore: false }
   }
 
   const rows = (postsRes.data ?? []) as (PostRow & {
@@ -238,9 +249,10 @@ export async function fetchFeedPostsForBuilding(
     }
   }
 
-  return rows.map((row) =>
+  const posts = rows.map((row) =>
     rowToFeedPost(row, memberMap, memberCount, myVotes.get(row.id) ?? null)
   )
+  return { posts, hasMore: rows.length === limit }
 }
 
 function rowToFeedPost(
@@ -576,7 +588,7 @@ export async function adminUpdateReportPostStatus(
   )
 }
 
-/** Pin / unpin — building admins only (RLS). */
+/** Pin / unpin — building admins only (RLS). When pinning, DB unpins every other post in the same building. */
 export async function adminSetPostPinned(
   postId: string,
   pinned: boolean

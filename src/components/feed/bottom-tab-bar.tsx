@@ -6,13 +6,10 @@ import {
 import { NavLink } from 'react-router-dom'
 
 import { CreatePostSheet } from '@/components/feed/create-post-sheet'
-import { postTypeLucideIcon } from '@/components/feed/post-type-styles'
+import { postTypeLucideIcon, POST_CREATE_BUTTON_HEX } from '@/components/feed/post-type-styles'
 import { useCreatePostComposer } from '@/context/create-post-composer-context'
 import { cn } from '@/lib/utils'
 
-const POST_ACCENT = '#FF0048'
-
-/** Post FAB — icon only, above פיד column */
 const FAB_ROUND_SLOT =
   'relative z-auto box-border flex h-[4.25rem] w-[4.25rem] min-h-[4.25rem] min-w-[4.25rem] shrink-0 items-center justify-center rounded-full p-1.5 touch-manipulation'
 
@@ -73,7 +70,7 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
                 'mt-0.5 size-1.5 shrink-0 rounded-full transition-opacity duration-150',
                 isActive ? 'opacity-100' : 'opacity-0'
               )}
-              style={{ backgroundColor: isActive ? POST_ACCENT : 'transparent' }}
+              style={{ backgroundColor: isActive ? POST_CREATE_BUTTON_HEX : 'transparent' }}
             />
           </>
         )}
@@ -112,7 +109,7 @@ export function BottomTabBar() {
                       FAB_ROUND_SLOT,
                       'text-white transition-transform duration-150 active:scale-[0.93] motion-reduce:transition-colors'
                     )}
-                    style={{ backgroundColor: POST_ACCENT }}
+                    style={{ backgroundColor: POST_CREATE_BUTTON_HEX }}
                     aria-label="פוסט חדש"
                   >
                     <CirclePlus

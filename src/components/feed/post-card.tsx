@@ -7,6 +7,8 @@ import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
 import { PollBlock } from '@/components/feed/poll-block'
 import {
   cardAccentByType,
+  pinnedPostCardGlowClass,
+  PINNED_POST_BORDER_HEX,
   postTypeChipLabel,
   postTypeLucideIcon,
   typeBadgeClass,
@@ -46,6 +48,7 @@ export function PostCard({
   const isRequest = post.type === 'בקשה'
   const compactCommentFooter = isUpdate || isReport || isPoll || isRequest
   const [liked, setLiked] = useState(false)
+  const pinned = post.pinned
 
   function goToPost() {
     navigate(`/post/${post.id}`)
@@ -64,7 +67,7 @@ export function PostCard({
 
   const metaEnd = (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-      {post.pinned ? (
+      {pinned ? (
         <span
           className={cn(
             CHIP,
@@ -117,9 +120,14 @@ export function PostCard({
       className={cn(
         'flex cursor-pointer touch-manipulation flex-col overflow-hidden px-5 pb-7 pt-6 sm:px-6',
         'transition-[box-shadow,transform] duration-150 motion-reduce:transition-colors',
-        'active:scale-[0.993] hover:-translate-y-px hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.5)]',
-        cardAccentByType(post.type)
+        'active:scale-[0.993]',
+        cardAccentByType(post.type),
+        pinned && 'border-2 border-solid',
+        pinned
+          ? pinnedPostCardGlowClass()
+          : 'hover:-translate-y-px hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.5)]'
       )}
+      style={pinned ? { borderColor: PINNED_POST_BORDER_HEX } : undefined}
       onClick={(e) => {
         if (adminSheetOpen) {
           e.preventDefault()
