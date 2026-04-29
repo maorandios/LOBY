@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 import { isPollPost, type FeedPost } from '@/types/feed'
 
 const CHIP =
-  'inline-flex max-w-full items-center gap-1.5 rounded-full px-3 py-1 text-[0.7rem] font-semibold tracking-tight'
+  'inline-flex max-w-full items-center gap-1 rounded-full px-2 py-1.5 text-[0.7rem] font-semibold tracking-tight'
 
 type Props = {
   post: FeedPost
@@ -131,7 +131,7 @@ export function PostCard({
 
       <div className="mt-4 flex flex-col gap-3">
         {isReport || isPoll ? (
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-0">
             <h2 className="min-w-0 text-start text-[1.06rem] leading-tight font-semibold tracking-tight text-foreground">
               {post.title}
             </h2>
