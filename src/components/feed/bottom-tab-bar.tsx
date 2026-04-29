@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Handshake,
   Home,
+  Megaphone,
   Plus,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
@@ -14,15 +15,14 @@ import { cn } from '@/lib/utils'
 
 const POST_ACCENT = '#FF0048'
 
-/** One physical size for every tab/post control (tap target); active tab adds a tighter ring only — see NavTab. */
-const ROUND_SLOT =
-  'relative z-0 box-border flex h-[4.25rem] w-[4.25rem] min-h-[4.25rem] min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-full p-1.5 text-center font-semibold'
+/** Post FAB circle — floats above פיד column; active nav uses a dot instead of rings — see NavTab. */
+const FAB_ROUND_SLOT =
+  'relative z-auto box-border flex h-[4.25rem] w-[4.25rem] min-h-[4.25rem] min-w-[4.25rem] shrink-0 flex-col items-center justify-center gap-1 rounded-full p-1.5 text-center font-semibold'
 
-/** Inner diameter of the dark ring when selected = ROUND outer ÷ 1.25 */
-const ACTIVE_RING_INSET =
-  'inset-[calc((4.25rem-4.25rem/1.25)/2)]'
+/** Nav tabs: tall tap targets, dot under label for active — no circular chrome. */
+const TAB_SLOT =
+  'relative flex min-h-[4.25rem] w-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-center font-semibold'
 
-/** Icon + label sizing (unchanged from full-size bar). */
 const ICON_BOX = 'flex h-[1.4375rem] w-[1.4375rem] shrink-0 items-center justify-center'
 const ICON_SIZE = 'size-[1.4375rem]'
 const STROKE = 2.3
@@ -40,10 +40,11 @@ type NavItem = {
   end?: boolean
 }
 
-/** פיד → דיווחים → (פוסט) → בקשות → סקרים — order in DOM; bar uses dir=rtl so פיד is on the right. */
-const NAV_SIDE: [NavItem, NavItem, NavItem, NavItem] = [
+/** פיד … סקרים — dir=rtl: first DOM item aligns to visual start (often right edge on mobile). Order matches bar left→right Hebrew UX. */
+const NAV_ITEMS: NavItem[] = [
   { to: '/feed', label: 'פיד', icon: Home, end: true },
   { to: '/reports', label: 'דיווחים', icon: ClipboardList, end: false },
+  { to: '/updates', label: 'עדכונים', icon: Megaphone, end: false },
   { to: '/requests', label: 'בקשות', icon: Handshake, end: false },
   { to: '/votes', label: 'סקרים', icon: BarChart2, end: false },
 ]
@@ -56,32 +57,29 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
         end={end}
         className={({ isActive }) =>
           cn(
-            ROUND_SLOT,
-            'touch-manipulation transition-[transform,color,box-shadow] duration-150 motion-reduce:transition-colors',
+            TAB_SLOT,
+            'touch-manipulation transition-[transform,color] duration-150 motion-reduce:transition-colors',
             'active:scale-[0.93] motion-reduce:active:scale-100',
             isActive
-              ? 'bg-transparent text-foreground'
-              : 'bg-transparent text-zinc-600 hover:text-foreground dark:text-zinc-400 dark:hover:text-zinc-100'
+              ? 'text-foreground'
+              : 'text-zinc-600 hover:text-foreground dark:text-zinc-400 dark:hover:text-zinc-100'
           )
         }
       >
         {({ isActive }) => (
           <>
-            {isActive ? (
-              <span
-                className={cn(
-                  'pointer-events-none absolute z-0 rounded-full ring-2 ring-zinc-700 dark:ring-zinc-400',
-                  ACTIVE_RING_INSET
-                )}
-                aria-hidden
-              />
-            ) : null}
-            <span className={cn(ICON_BOX, 'relative z-[1] text-inherit')}>
+            <span className={cn(ICON_BOX, 'text-inherit')}>
               <Icon className={ICON_SIZE} strokeWidth={STROKE} aria-hidden />
             </span>
-            <span className={cn(LABEL, 'relative z-[1] text-inherit')}>
-              {label}
-            </span>
+            <span className={cn(LABEL, 'text-inherit')}>{label}</span>
+            <span
+              aria-hidden
+              className={cn(
+                'mt-0.5 size-1.5 shrink-0 rounded-full transition-opacity duration-150',
+                isActive ? 'opacity-100' : 'opacity-0'
+              )}
+              style={{ backgroundColor: isActive ? POST_ACCENT : 'transparent' }}
+            />
           </>
         )}
       </NavLink>
@@ -96,10 +94,43 @@ export function BottomTabBar() {
     <>
       <div
         className={cn(
-          'pointer-events-none fixed inset-x-0 bottom-0 w-full',
-          createOpen ? 'z-40' : 'z-50'
+          'fixed inset-x-0 bottom-0 z-50 w-full',
+          createOpen ? 'pointer-events-none z-40 opacity-90' : 'pointer-events-auto'
         )}
       >
+        {/* FAB row aligns with NAV_ITEMS[0] (פיד) — same rtl grid tracks as nav */}
+        <div className="mx-auto w-full max-w-lg px-1 pb-1 pt-1 sm:px-2">
+          <div
+            className={cn(
+              'grid grid-cols-5 gap-px',
+              createOpen && 'pointer-events-none'
+            )}
+            dir="rtl"
+          >
+            {Array.from({ length: 5 }, (_, i) => (
+              <div key={i} className="flex min-w-0 justify-center self-end p-[5px]">
+                {i === 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setCreateOpen(true)}
+                    className={cn(
+                      FAB_ROUND_SLOT,
+                      'text-white touch-manipulation transition-transform duration-150 active:scale-[0.93] motion-reduce:transition-colors'
+                    )}
+                    style={{ backgroundColor: POST_ACCENT }}
+                    aria-label="פוסט חדש"
+                  >
+                    <span className={cn(ICON_BOX, 'text-inherit')}>
+                      <Plus className={ICON_SIZE} strokeWidth={STROKE} aria-hidden />
+                    </span>
+                    <SlotLabel>פוסט</SlotLabel>
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <nav
           className={cn(
             'w-full border-t border-zinc-200/70 bg-feed-canvas backdrop-blur-xl supports-[backdrop-filter]:bg-feed-canvas/90 dark:border-white/10',
@@ -109,32 +140,10 @@ export function BottomTabBar() {
           aria-label="ניווט ראשי"
           dir="rtl"
         >
-          <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-1 px-2 py-1.5 sm:px-3">
-            <NavTab {...NAV_SIDE[0]} />
-            <NavTab {...NAV_SIDE[1]} />
-
-            <div className="flex min-w-0 flex-1 basis-0 justify-center">
-              <button
-                type="button"
-                onClick={() => setCreateOpen(true)}
-                className={cn(
-                  ROUND_SLOT,
-                  'text-white touch-manipulation transition-[transform,box-shadow] duration-150',
-                  'active:scale-[0.93] motion-reduce:active:scale-100',
-                  'shadow-[0_1px_3px_rgba(0,0,0,0.18)]'
-                )}
-                style={{ backgroundColor: POST_ACCENT }}
-                aria-label="פוסט חדש"
-              >
-                <span className={cn(ICON_BOX, 'text-inherit')}>
-                  <Plus className={ICON_SIZE} strokeWidth={STROKE} aria-hidden />
-                </span>
-                <SlotLabel>פוסט</SlotLabel>
-              </button>
-            </div>
-
-            <NavTab {...NAV_SIDE[2]} />
-            <NavTab {...NAV_SIDE[3]} />
+          <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-0 px-1 py-1.5 sm:gap-px sm:px-2">
+            {NAV_ITEMS.map((item) => (
+              <NavTab key={item.to} {...item} />
+            ))}
           </div>
         </nav>
       </div>

@@ -34,6 +34,7 @@ export default function App() {
             <Route path="home" element={<Navigate to="/feed" replace />} />
             <Route path="feed" element={<FeedPage mode="all" />} />
             <Route path="reports" element={<FeedPage mode="reports" />} />
+            <Route path="updates" element={<FeedPage mode="updates" />} />
             <Route path="requests" element={<FeedPage mode="requests" />} />
             <Route path="votes" element={<FeedPage mode="polls" />} />
             <Route path="post/:postId" element={<PostDetailPage />} />

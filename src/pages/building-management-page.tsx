@@ -162,7 +162,7 @@ export function BuildingManagementPage() {
   if (membershipLoading || (isAdmin && pageLoading)) {
     return (
       <div
-        className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]"
+        className="min-h-svh bg-feed-canvas pb-[calc(11rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]"
         dir="rtl"
       >
         <ProfileCornerLink />
@@ -176,7 +176,7 @@ export function BuildingManagementPage() {
   if (!isAdmin) {
     return (
       <div
-        className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]"
+        className="min-h-svh bg-feed-canvas pb-[calc(11rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]"
         dir="rtl"
       >
         <ProfileCornerLink />
@@ -202,7 +202,7 @@ export function BuildingManagementPage() {
 
   return (
     <div
-      className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]"
+      className="min-h-svh bg-feed-canvas pb-[calc(11rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]"
       dir="rtl"
     >
       <ProfileCornerLink />

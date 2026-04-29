@@ -82,7 +82,7 @@ export function PostDetailPage() {
   }
 
   return (
-    <div className="relative min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]">
+    <div className="relative min-h-svh bg-feed-canvas pb-[calc(11rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]">
       <ProfileCornerLink />
       <div className="mx-auto max-w-lg px-3 pb-4 pt-[max(3rem,env(safe-area-inset-top)-0.25rem)]">
         <Link

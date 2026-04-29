@@ -29,7 +29,7 @@ export function ProfilePage() {
   return (
     <div
       dir="rtl"
-      className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top))]"
+      className="min-h-svh bg-feed-canvas pb-[calc(11rem+env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top))]"
     >
       <main className="mx-auto max-w-lg px-4 py-6">
         <h1 className="mb-6 text-xl font-semibold tracking-tight text-foreground">פרופיל</h1>

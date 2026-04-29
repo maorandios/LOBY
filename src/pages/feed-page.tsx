@@ -35,6 +35,8 @@ function emptyHint(mode: FeedTabMode): string {
       return 'עדיין אין פוסטים בפיד.'
     case 'reports':
       return 'עדיין אין דיווחים.'
+    case 'updates':
+      return 'עדיין אין עדכונים.'
     case 'requests':
       return 'עדיין אין בקשות.'
     case 'polls':
@@ -146,7 +148,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
   return (
     <div
       dir="rtl"
-      className="min-h-svh bg-feed-canvas pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]"
+      className="min-h-svh bg-feed-canvas pb-[calc(11rem+env(safe-area-inset-bottom,0px))]"
     >
       <div className="bg-feed-canvas pt-[env(safe-area-inset-top)]">
         <FeedHeader buildingName={buildingTitle} />

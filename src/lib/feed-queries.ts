@@ -115,7 +115,7 @@ export function feedPostMatchesFilter(
 }
 
 /** Which tab route is active (bottom pill) — filters which posts are shown. */
-export type FeedTabMode = 'all' | 'reports' | 'requests' | 'polls'
+export type FeedTabMode = 'all' | 'reports' | 'updates' | 'requests' | 'polls'
 
 export function feedPostMatchesTabMode(
   post: FeedPost,
@@ -126,6 +126,8 @@ export function feedPostMatchesTabMode(
       return true
     case 'reports':
       return post.type === 'דיווח'
+    case 'updates':
+      return post.type === 'עדכון'
     case 'requests':
       return post.type === 'בקשה'
     case 'polls':
