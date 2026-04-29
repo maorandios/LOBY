@@ -24,10 +24,14 @@ export function AuthorNameWithAdminBadge({
   /* dir=rtl places first DOM item on inline-start (= physical right): badge hugs the right of the name cluster */
   return (
     <span
-      className="inline-flex min-w-0 items-center gap-1"
+      className="inline-flex min-w-0 items-center gap-1 leading-snug"
       dir="rtl"
     >
-      <span className="inline-flex shrink-0" role="img" aria-label="מנהל ועד">
+      <span
+        className="inline-flex h-[1.15em] shrink-0 items-center justify-center"
+        role="img"
+        aria-label="מנהל ועד"
+      >
         <AdminBadgeCheck className="size-3.5" />
       </span>
       <span

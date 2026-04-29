@@ -100,13 +100,11 @@ export function PostCard({
         authorIsAdmin={post.authorIsAdmin}
       />
       <span aria-hidden className="text-muted-foreground/80">
-        {' '}
-        ·{' '}
+        ·
       </span>
       <span className="text-muted-foreground">דירה {post.apartment}</span>
       <span aria-hidden className="text-muted-foreground/80">
-        {' '}
-        ·{' '}
+        ·
       </span>
       <span className="tabular-nums text-muted-foreground">
         {post.relativeTime}
@@ -124,8 +122,8 @@ export function PostCard({
       )}
       onClick={goToPost}
     >
-      <div className="flex w-full items-start justify-between gap-3">
-        <p className="min-w-0 flex-1 text-start text-[0.8rem] leading-snug text-foreground">
+      <div className="flex w-full items-center justify-between gap-3">
+        <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 text-start text-[0.8rem] leading-snug text-foreground">
           {residentMeta}
         </p>
         {metaEnd}
@@ -133,14 +131,13 @@ export function PostCard({
 
       <div className="mt-4 flex flex-col gap-3">
         {isReport || isPoll ? (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <StatusBadge status={post.status} />
-            <span aria-hidden className="text-muted-foreground/80">
-              ·
-            </span>
-            <h2 className="min-w-0 flex-1 text-start text-[1.06rem] leading-snug font-semibold tracking-tight text-foreground">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2">
+            <h2 className="min-w-0 text-start text-[1.06rem] leading-tight font-semibold tracking-tight text-foreground">
               {post.title}
             </h2>
+            <span className="inline-flex shrink-0">
+              <StatusBadge status={post.status} />
+            </span>
           </div>
         ) : (
           <div>

@@ -183,3 +183,24 @@
     transform: none !important;
   }
 }
+
+@keyframes loby-status-dot-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.animate-loby-status-dot-blink {
+  animation: loby-status-dot-blink 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-loby-status-dot-blink {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}

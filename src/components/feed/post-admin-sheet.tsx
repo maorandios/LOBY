@@ -145,7 +145,7 @@ export function PostAdminSheet({
                   )
                 }
               >
-                {busyKey === 'closed' ? '…' : 'נסגר'}
+                {busyKey === 'closed' ? '…' : 'סגור'}
               </Button>
             </>
           ) : null}
@@ -180,7 +180,7 @@ export function PostAdminSheet({
                 void wrap('decided', () => adminMarkPollDecided(post.id))
               }
             >
-              {busyKey === 'decided' ? '…' : 'סמן כהוחלט'}
+              {busyKey === 'decided' ? '…' : 'סמן כסגור'}
             </Button>
           ) : null}
 
