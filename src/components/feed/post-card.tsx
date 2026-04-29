@@ -12,7 +12,7 @@ import {
   typeBadgeClass,
 } from '@/components/feed/post-type-styles'
 import { AuthorNameWithAdminBadge } from '@/components/feed/author-name-with-admin'
-import { StatusBadge } from '@/components/feed/status-badge'
+import { StatusLabel, StatusMarker } from '@/components/feed/status-badge'
 import { cn } from '@/lib/utils'
 import { isPollPost, type FeedPost } from '@/types/feed'
 
@@ -115,12 +115,19 @@ export function PostCard({
   return (
     <article
       className={cn(
-        'flex cursor-pointer touch-manipulation flex-col overflow-hidden p-5',
+        'flex cursor-pointer touch-manipulation flex-col overflow-hidden px-5 pb-7 pt-6 sm:px-6',
         'transition-[box-shadow,transform] duration-150 motion-reduce:transition-colors',
         'active:scale-[0.993] hover:-translate-y-px hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.5)]',
         cardAccentByType(post.type)
       )}
-      onClick={goToPost}
+      onClick={(e) => {
+        if (adminSheetOpen) {
+          e.preventDefault()
+          e.stopPropagation()
+          return
+        }
+        goToPost()
+      }}
     >
       <div className="flex w-full items-center justify-between gap-3">
         <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 text-start text-[0.8rem] leading-snug text-foreground">
@@ -129,15 +136,16 @@ export function PostCard({
         {metaEnd}
       </div>
 
-      <div className="mt-4 flex flex-col gap-3">
+      <div className="mt-7 flex flex-col gap-5">
         {isReport || isPoll ? (
-          <div className="flex min-w-0 flex-wrap items-center gap-x-0">
-            <span className="inline-flex shrink-0">
-              <StatusBadge status={post.status} />
-            </span>
-            <h2 className="min-w-0 flex-1 text-start text-[1.06rem] leading-tight font-medium tracking-tight text-foreground">
-              {post.title}
-            </h2>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-[5px] gap-y-2">
+            <StatusLabel status={post.status} />
+            <StatusMarker status={post.status} />
+            <div className="min-w-0 flex-1 basis-0">
+              <h2 className="text-start text-[1.06rem] leading-snug font-medium tracking-tight text-foreground">
+                {post.title}
+              </h2>
+            </div>
           </div>
         ) : (
           <div>
@@ -145,22 +153,6 @@ export function PostCard({
               {post.title}
             </h2>
           </div>
-        )}
-
-        {post.bodyPreview && !isPoll && (
-          <p
-            className={cn(
-              'text-[0.9rem] leading-relaxed text-foreground/90',
-              isUpdate ? '' : 'line-clamp-2'
-            )}
-          >
-            {post.bodyPreview}
-            {!isUpdate && post.bodyPreview.length > 90 && (
-              <span className="ms-1 text-[0.75rem] font-medium text-primary/80">
-                קרא עוד
-              </span>
-            )}
-          </p>
         )}
 
         {post.imageUrl ? (
@@ -174,7 +166,7 @@ export function PostCard({
           </div>
         ) : null}
 
-        {isPoll && !isUpdate && (
+        {isPoll && (
           <div
             className="rounded-2xl bg-muted/45 p-3 dark:bg-muted/25"
             onClick={(e) => e.stopPropagation()}
@@ -194,7 +186,7 @@ export function PostCard({
       </div>
 
       <div
-        className="mt-4 flex gap-2"
+        className="mt-8 flex gap-2"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >

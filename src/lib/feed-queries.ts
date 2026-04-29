@@ -14,7 +14,6 @@ export type PostRow = {
   type: PostTypeDb
   status: PostStatusDb
   title: string
-  body: string | null
   image_url: string | null
   poll_cancelled: boolean
   poll_closed: boolean
@@ -187,7 +186,6 @@ export async function fetchFeedPostsForBuilding(
         type,
         status,
         title,
-        body,
         image_url,
         poll_cancelled,
         poll_closed,
@@ -266,7 +264,6 @@ function rowToFeedPost(
     author: displayName(memberMap, row.author_id),
     apartment: apartmentLabel(memberMap, row.author_id),
     authorIsAdmin: memberIsAdmin(memberMap, row.author_id),
-    bodyPreview: row.body?.trim() ?? undefined,
     imageUrl: row.image_url?.trim() || undefined,
     comments: commentsCount,
     recentComments: undefined as PostComment[] | undefined,
@@ -299,7 +296,6 @@ export async function fetchPostById(postId: string): Promise<FeedPost | null> {
       type,
       status,
       title,
-      body,
       image_url,
       poll_cancelled,
       poll_closed,
@@ -473,17 +469,14 @@ export type CreatePostPayload = {
   | {
       kind: 'report'
       title: string
-      body: string
     }
   | {
       kind: 'update' | 'request'
       title: string
-      body: string
     }
   | {
       kind: 'poll'
       title: string
-      body?: string
       options: string[]
     }
 )
@@ -515,7 +508,6 @@ export async function createPost(payload: CreatePostPayload): Promise<{
         type: 'poll' satisfies PostTypeDb,
         status: 'open' satisfies PostStatusDb,
         title: payload.title.trim(),
-        body: payload.body?.trim() || null,
         image_url: resolvedImageUrl,
         poll_closed: false,
         poll_cancelled: false,
@@ -550,7 +542,6 @@ export async function createPost(payload: CreatePostPayload): Promise<{
       type: payload.kind satisfies PostTypeDb,
       status: 'open' satisfies PostStatusDb,
       title: payload.title.trim(),
-      body: payload.body.trim(),
       image_url: resolvedImageUrl,
       poll_closed: false,
       poll_cancelled: false,

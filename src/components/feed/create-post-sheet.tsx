@@ -389,7 +389,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           buildingId: member.building_id,
           kind: 'report',
           title: t,
-          body: t,
           imageUrl,
         })
       } else if (kind === 'update') {
@@ -397,7 +396,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           buildingId: member.building_id,
           kind: 'update',
           title: t,
-          body: t,
           imageUrl,
         })
       } else {
@@ -405,7 +403,6 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           buildingId: member.building_id,
           kind: 'request',
           title: t,
-          body: t,
           imageUrl,
         })
       }

@@ -18,6 +18,11 @@ const DOT_BOX = 'size-[calc(0.5rem/1.25)]'
 
 const STATUS_ICON_SIZE = 'size-[calc(14px/1.25)]'
 
+function statusDisplayText(status: PostStatusHe): string {
+  if (status === 'נסגר' || status === 'הוחלט') return CLOSED_UI_LABEL
+  return status
+}
+
 function BlinkDot({
   variant,
 }: {
@@ -38,34 +43,58 @@ function BlinkDot({
   )
 }
 
-export function StatusBadge({ status }: { status: PostStatusHe }) {
+/** Label only — no padding-inline-end so flex `gap` is the real space marker↔glyph. */
+export function StatusLabel({ status }: { status: PostStatusHe }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2.5 py-0 text-[0.75rem] font-semibold leading-none tracking-tight',
+        'inline-flex shrink-0 items-center rounded-full py-0 ps-3 pe-0 text-[0.75rem] font-semibold leading-none tracking-tight',
         statusChipClass[status],
       )}
     >
-      {status === 'פתוח' ? (
-        <>
-          <BlinkDot variant="open" />
-          {status}
-        </>
-      ) : status === 'בטיפול' ? (
-        <>
-          <BlinkDot variant="in_progress" />
-          {status}
-        </>
-      ) : (
-        <>
-          <CircleCheckBig
-            className={cn(STATUS_ICON_SIZE, 'shrink-0')}
-            strokeWidth={2}
-            aria-hidden
-          />
-          {CLOSED_UI_LABEL}
-        </>
+      {statusDisplayText(status)}
+    </span>
+  )
+}
+
+/** Blinking dot or check icon — sits between label and title. */
+export function StatusMarker({ status }: { status: PostStatusHe }) {
+  if (status === 'פתוח') {
+    return (
+      <span className="inline-flex shrink-0 items-center justify-center" aria-hidden>
+        <BlinkDot variant="open" />
+      </span>
+    )
+  }
+  if (status === 'בטיפול') {
+    return (
+      <span className="inline-flex shrink-0 items-center justify-center" aria-hidden>
+        <BlinkDot variant="in_progress" />
+      </span>
+    )
+  }
+  return (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center',
+        statusChipClass[status],
       )}
+      aria-hidden
+    >
+      <CircleCheckBig
+        className={cn(STATUS_ICON_SIZE, 'shrink-0')}
+        strokeWidth={2}
+      />
+    </span>
+  )
+}
+
+/** Compact label + marker only (no title). Uneven spacing vs title — prefer `StatusLabel` + `StatusMarker` in the card row. */
+export function StatusBadge({ status }: { status: PostStatusHe }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <StatusLabel status={status} />
+      <StatusMarker status={status} />
     </span>
   )
 }

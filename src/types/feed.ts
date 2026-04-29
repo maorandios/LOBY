@@ -45,7 +45,6 @@ export interface FeedPostBase {
   apartment: string
   /** Building committee admin — badge beside author name */
   authorIsAdmin?: boolean
-  bodyPreview?: string
   /** Public image URL from storage (optional attachment) */
   imageUrl?: string
   comments: number

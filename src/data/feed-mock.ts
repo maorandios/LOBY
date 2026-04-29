@@ -20,8 +20,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'תאורה לא עובדת בחניון',
     author: 'מאור ישראלי',
     apartment: '12',
-    bodyPreview:
-      'שורת נורות ליד היציאה לרחוב לא נדלקת כבר יומיים. אשמח לבדיקה.',
     comments: 4,
     views: 38,
     recentComments: [
@@ -38,7 +36,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'האם לאשר צביעת הלובי?',
     author: 'ועד הבית',
     apartment: '—',
-    bodyPreview: 'הצעת צבעים מצורפת בנוסף לפוסט.',
     comments: 9,
     views: 112,
     recentComments: [
@@ -67,8 +64,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'מנגל בגינה היום ב-18:00',
     author: 'דני לוי',
     apartment: '5',
-    bodyPreview:
-      'מזמינים שכנים להצטרף — נדאג לעמדת מים ולפח אשפה ליד הכניסה.',
     comments: 2,
     views: 54,
     recentComments: [c('c5', 'מיכל', '9', 'מגיעים עם סלט!', 'אתמול')],
@@ -82,7 +77,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'רכב חוסם את חניה 14',
     author: 'נועה כהן',
     apartment: '14',
-    bodyPreview: 'רכב אפור, ללא תג זיהוי. נא סידור דחוף.',
     comments: 7,
     views: 91,
   },
@@ -95,8 +89,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'המעלית תושבת מחר בין 09:00 ל-12:00',
     author: 'חברת אחזקה — אלמוג',
     apartment: '—',
-    bodyPreview:
-      'תיקון מנגנון דלת. נא להקדיש זמן נוסף לנסיעה בגרמי מדרגות.',
     comments: 15,
     views: 203,
   },
@@ -109,7 +101,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'דליפת מים בחדר כיבוי',
     author: 'רועי',
     apartment: '3',
-    bodyPreview: 'טופל ע"י אינסטלטור. תודה לכל העונים.',
     comments: 3,
     views: 44,
   },
@@ -145,8 +136,6 @@ export const MOCK_POSTS: FeedPost[] = [
     title: 'מישהו יכול לאשר קבלה זמנית?',
     author: 'שירה',
     apartment: '8',
-    bodyPreview:
-      'מצפים לחבילה גדולה מחר בבוקר. מי שיכול לעזור — נשמח לשורה בפרטי.',
     comments: 6,
     views: 29,
   },
