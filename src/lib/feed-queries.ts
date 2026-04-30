@@ -4,6 +4,7 @@ import type { BuildingMemberRole } from '@/types/building'
 import type { FeedPost, PollData, PostComment } from '@/types/feed'
 import { isPollPost } from '@/types/feed'
 import { supabase } from '@/lib/supabase'
+import { normalizePhoneForWhatsApp } from '@/lib/whatsapp-phone'
 import { formatRelativeTimeHe } from '@/lib/format-relative-time-he'
 import type { FeedFilterId } from '@/types/feed'
 
@@ -39,6 +40,16 @@ type MemberMapEntry = {
   name: string | null
   apt: string | null
   role: BuildingMemberRole | null
+  /** Stored signup/contact phone — used for WhatsApp deeplink only when normalized */
+  phone: string | null
+}
+
+function memberWhatsAppDigits(
+  map: Map<string, MemberMapEntry>,
+  userId: string
+): string | undefined {
+  const normalized = normalizePhoneForWhatsApp(map.get(userId)?.phone ?? null)
+  return normalized ?? undefined
 }
 
 function displayName(map: Map<string, MemberMapEntry>, userId: string): string {
@@ -153,7 +164,7 @@ export async function fetchMemberMap(
 ): Promise<Map<string, MemberMapEntry>> {
   const { data, error } = await supabase
     .from('building_members')
-    .select('user_id, full_name, apartment_number, role')
+    .select('user_id, full_name, apartment_number, role, phone')
     .eq('building_id', buildingId)
   const map = new Map<string, MemberMapEntry>()
   if (error) {
@@ -165,6 +176,7 @@ export async function fetchMemberMap(
       name: row.full_name as string | null,
       apt: row.apartment_number as string | null,
       role: (row.role as BuildingMemberRole) ?? null,
+      phone: (row.phone as string | null) ?? null,
     })
   }
   return map
@@ -361,6 +373,7 @@ function rowToFeedPost(
     relativeTime: rel,
     title: row.title,
     authorId: row.author_id,
+    authorWhatsAppDigits: memberWhatsAppDigits(memberMap, row.author_id),
     author: displayName(memberMap, row.author_id),
     apartment: apartmentLabel(memberMap, row.author_id),
     authorIsAdmin: memberIsAdmin(memberMap, row.author_id),

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, MessageCirclePlus, MessagesSquare, Settings, ShieldUser } from 'lucide-react'
+import { Heart, MessageCircle, MessageCircleCheck, MessageCirclePlus, MessagesSquare, Settings, ShieldUser } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
@@ -29,6 +29,10 @@ import { isPollPost, type FeedPost, type PostComment } from '@/types/feed'
 
 const CHIP =
   'inline-flex max-w-full items-center gap-[0.21rem] rounded-full px-[0.425rem] py-[5px] text-[0.595rem] font-semibold tracking-tight'
+
+/** Bordered feed actions — match `Button` + «תגובה» (text-sm, semibold) */
+const FEED_REPLY_WA_PILL =
+  'inline-flex h-10 min-w-0 flex-1 touch-manipulation items-center justify-center gap-2 rounded-full border border-zinc-300 bg-transparent px-3 text-sm font-semibold text-foreground shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25'
 
 type Props = {
   post: FeedPost
@@ -288,10 +292,63 @@ export function PostCard({
                 )}
               >
                 {!isDetail ? (
+                  <div className="flex min-w-0 flex-1 gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-10 min-w-0 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent text-sm font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
+                      aria-expanded={replyOpen}
+                      aria-controls={`feed-inline-reply-${post.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleReplyComposer()
+                      }}
+                    >
+                      <MessageCirclePlus
+                        className="size-4 shrink-0 opacity-90"
+                        strokeWidth={2}
+                        aria-hidden
+                      />
+                      תגובה
+                    </Button>
+                    {post.authorWhatsAppDigits ? (
+                      <a
+                        href={`https://wa.me/${post.authorWhatsAppDigits}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(
+                          FEED_REPLY_WA_PILL,
+                          'no-underline hover:text-foreground'
+                        )}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MessageCircleCheck
+                          className="size-4 shrink-0 opacity-90"
+                          strokeWidth={2}
+                          aria-hidden
+                        />
+                        וואטצאפ
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+                <div
+                  className="inline-flex h-10 shrink-0 items-center gap-1.5 px-4 text-sm font-semibold text-foreground sm:px-0"
+                  aria-label={`${post.comments} תגובות`}
+                >
+                  <MessageCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <span className="tabular-nums">{post.comments}</span>
+                </div>
+              </div>
+            )
+          ) : (
+            <>
+              {!isDetail ? (
+                <>
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-10 min-w-0 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
+                    className="h-10 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent text-sm font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
                     aria-expanded={replyOpen}
                     aria-controls={`feed-inline-reply-${post.id}`}
                     onClick={(e) => {
@@ -306,37 +363,26 @@ export function PostCard({
                     />
                     תגובה
                   </Button>
-                ) : null}
-                <div
-                  className="inline-flex h-10 shrink-0 items-center gap-1.5 px-4 text-sm font-semibold text-foreground sm:px-0"
-                  aria-label={`${post.comments} תגובות`}
-                >
-                  <MessageCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                  <span className="tabular-nums">{post.comments}</span>
-                </div>
-              </div>
-            )
-          ) : (
-            <>
-              {!isDetail ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-10 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
-                  aria-expanded={replyOpen}
-                  aria-controls={`feed-inline-reply-${post.id}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleReplyComposer()
-                  }}
-                >
-                  <MessageCirclePlus
-                    className="size-4 shrink-0 opacity-90"
-                    strokeWidth={2}
-                    aria-hidden
-                  />
-                  תגובה
-                </Button>
+                  {post.authorWhatsAppDigits ? (
+                    <a
+                      href={`https://wa.me/${post.authorWhatsAppDigits}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(
+                          FEED_REPLY_WA_PILL,
+                          'no-underline hover:text-foreground'
+                        )}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MessageCircleCheck
+                        className="size-4 shrink-0 opacity-90"
+                        strokeWidth={2}
+                        aria-hidden
+                      />
+                      וואטצאפ
+                    </a>
+                  ) : null}
+                </>
               ) : null}
               <Button
                 type="button"
@@ -436,8 +482,6 @@ export function PostCard({
         <section
           className="mt-6 border-t border-border/40 pt-5"
           aria-labelledby={`recent-comments-heading-${post.id}`}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
         >
           <h3
             id={`recent-comments-heading-${post.id}`}

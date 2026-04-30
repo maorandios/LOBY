@@ -43,6 +43,8 @@ export interface FeedPostBase {
   title: string
   /** auth.users id — for client checks (e.g. author delete) */
   authorId: string
+  /** Digits only for `wa.me` when author has a normalizable phone on file */
+  authorWhatsAppDigits?: string
   author: string
   apartment: string
   /** Building committee admin — badge beside author name */
