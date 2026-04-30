@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, MoveLeft, Settings } from 'lucide-react'
+import { Heart, MessageCircle, MessageCirclePlus, Settings, ShieldUser } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
@@ -10,14 +10,20 @@ import {
   cardAccentByType,
   pinnedPostCardGlowClass,
   PINNED_POST_BORDER_HEX,
+  POST_CREATE_BUTTON_HEX,
   postTypeChipLabel,
   postTypeLucideIcon,
   typeBadgeClass,
 } from '@/components/feed/post-type-styles'
 import { AuthorNameWithAdminBadge } from '@/components/feed/author-name-with-admin'
 import { StatusLabel, StatusMarker } from '@/components/feed/status-badge'
+import { useBuildingMembership } from '@/hooks/use-building-membership'
+import { insertComment } from '@/lib/feed-queries'
 import { cn } from '@/lib/utils'
 import { isPollPost, type FeedPost } from '@/types/feed'
+
+const commentFieldClass =
+  'flex min-h-[88px] w-full resize-y rounded-xl border-0 bg-background/40 px-3 py-2 text-base outline-none ring-offset-background placeholder:text-[0.8rem] placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55'
 
 const CHIP =
   'inline-flex max-w-full items-center gap-[0.21rem] rounded-full px-[0.425rem] py-[5px] text-[0.595rem] font-semibold tracking-tight'
@@ -34,6 +40,8 @@ type Props = {
   onAdminSuccess?: () => void
   /** When set, after delete the parent runs this (e.g. navigate away). */
   onAdminDelete?: () => void
+  /** Feed: after inline «תגובה» composer succeeds, bump parent list count. */
+  onCommentPosted?: (postId: string) => void
 }
 
 export function PostCard({
@@ -43,9 +51,19 @@ export function PostCard({
   isAdmin,
   onAdminSuccess,
   onAdminDelete,
+  onCommentPosted,
 }: Props) {
   const navigate = useNavigate()
+  const { member, isAdmin: currentUserIsCommitteeAdmin } =
+    useBuildingMembership()
+  const inlineReplyAuthorLabel =
+    member?.full_name?.trim() || 'משתמש'
   const [adminSheetOpen, setAdminSheetOpen] = useState(false)
+  const [replyOpen, setReplyOpen] = useState(false)
+  const [replyBody, setReplyBody] = useState('')
+  const [replySending, setReplySending] = useState(false)
+  const [replyError, setReplyError] = useState<string | null>(null)
+  const replyTextareaRef = useRef<HTMLTextAreaElement>(null)
   const isPoll = isPollPost(post)
   const isUpdate = post.type === 'עדכון'
   const isReport = post.type === 'דיווח'
@@ -54,6 +72,45 @@ export function PostCard({
   const [liked, setLiked] = useState(false)
   const pinned = post.pinned
   const isDetail = variant === 'detail'
+
+  useEffect(() => {
+    if (!replyOpen || isDetail) return
+    const id = requestAnimationFrame(() => replyTextareaRef.current?.focus())
+    return () => cancelAnimationFrame(id)
+  }, [replyOpen, isDetail])
+
+  function closeReplyComposer() {
+    setReplyOpen(false)
+  }
+
+  useEffect(() => {
+    if (!replyOpen) {
+      setReplyBody('')
+      setReplyError(null)
+    }
+  }, [replyOpen])
+
+  async function handleInlineCommentSubmit() {
+    if (!replyBody.trim() || replySending || isDetail) return
+    setReplySending(true)
+    setReplyError(null)
+    try {
+      const inserted = await insertComment(post.id, replyBody)
+      if (inserted) {
+        onCommentPosted?.(post.id)
+        closeReplyComposer()
+      } else {
+        setReplyError('לא ניתן לפרסם את התגובה. נסו שוב.')
+      }
+    } finally {
+      setReplySending(false)
+    }
+  }
+
+  function toggleReplyComposer() {
+    if (isDetail) return
+    setReplyOpen((o) => !o)
+  }
 
   function goToPost() {
     navigate(`/post/${post.id}`)
@@ -200,68 +257,160 @@ export function PostCard({
       </div>
 
       <div
-        className="mt-8 flex gap-2"
+        className="mt-8 flex flex-col gap-3"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
-        {compactCommentFooter ? (
-          <div
-            className={cn(
-              'flex w-full items-stretch gap-2',
-              isDetail && 'justify-end'
-            )}
-          >
-            {!isDetail ? (
+        <div className={cn('flex gap-2', compactCommentFooter && !isDetail && 'w-full')}>
+          {compactCommentFooter ? (
+            <div
+              className={cn(
+                'flex w-full items-stretch gap-2',
+                isDetail && 'justify-end'
+              )}
+            >
+              {!isDetail ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-10 min-w-0 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
+                  aria-expanded={replyOpen}
+                  aria-controls={`feed-inline-reply-${post.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleReplyComposer()
+                  }}
+                >
+                  <MessageCirclePlus
+                    className="size-4 shrink-0 opacity-90"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  תגובה
+                </Button>
+              ) : null}
+              <div
+                className="inline-flex h-10 shrink-0 items-center gap-1.5 px-4 text-sm font-semibold text-foreground sm:px-0"
+                aria-label={`${post.comments} תגובות`}
+              >
+                <MessageCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="tabular-nums">{post.comments}</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              {!isDetail ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-10 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
+                  aria-expanded={replyOpen}
+                  aria-controls={`feed-inline-reply-${post.id}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleReplyComposer()
+                  }}
+                >
+                  <MessageCirclePlus
+                    className="size-4 shrink-0 opacity-90"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  תגובה
+                </Button>
+              ) : null}
               <Button
                 type="button"
-                variant="ghost"
-                className="h-10 min-w-0 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
-                onClick={() => navigate(`/post/${post.id}`)}
+                variant={liked ? 'default' : 'secondary'}
+                className={cn(
+                  'h-10 flex-1 rounded-full gap-2 font-semibold shadow-none',
+                  isDetail && '!flex-none min-w-[8.5rem]',
+                  liked && 'bg-rose-600 text-white hover:bg-rose-600/90 dark:bg-rose-600'
+                )}
+                onClick={() => setLiked((v) => !v)}
+                aria-pressed={liked}
               >
-                תגובה
-                <MoveLeft className="size-4 shrink-0 opacity-90" aria-hidden />
+                <Heart
+                  className={cn('size-4', liked && 'fill-current')}
+                  aria-hidden
+                />
+                לייק
               </Button>
+            </>
+          )}
+        </div>
+
+        {!isDetail && replyOpen ? (
+          <div
+            id={`feed-inline-reply-${post.id}`}
+            className="flex flex-col gap-2 rounded-2xl bg-muted/20 p-3 dark:bg-muted/15"
+            role="region"
+            aria-label="כתיבת תגובה"
+          >
+            <div className="flex items-center justify-start gap-1">
+              {currentUserIsCommitteeAdmin ? (
+                <ShieldUser
+                  className="inline-block size-[0.744rem] shrink-0"
+                  style={{ color: POST_CREATE_BUTTON_HEX }}
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              ) : (
+                <ResidentMetaUserIcon className="size-[0.744rem]" />
+              )}
+              <span className="text-start text-[0.7rem] font-semibold leading-tight text-foreground">
+                {inlineReplyAuthorLabel}
+              </span>
+            </div>
+            <label htmlFor={`feed-inline-reply-field-${post.id}`} className="sr-only">
+              תגובה חדשה
+            </label>
+            <textarea
+              ref={replyTextareaRef}
+              id={`feed-inline-reply-field-${post.id}`}
+              dir="rtl"
+              rows={3}
+              className={commentFieldClass}
+              placeholder="מה תרצו להגיב?"
+              value={replyBody}
+              onChange={(e) => setReplyBody(e.target.value)}
+              onKeyDown={(e) => {
+                if (
+                  e.key === 'Enter' &&
+                  !e.shiftKey &&
+                  (e.ctrlKey || e.metaKey)
+                ) {
+                  e.preventDefault()
+                  void handleInlineCommentSubmit()
+                }
+              }}
+            />
+            {replyError ? (
+              <p className="text-sm text-destructive" role="alert">
+                {replyError}
+              </p>
             ) : null}
-            <div
-              className="inline-flex h-10 shrink-0 items-center gap-1.5 px-4 text-sm font-semibold text-foreground sm:px-0"
-              aria-label={`${post.comments} תגובות`}
-            >
-              <MessageCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="tabular-nums">{post.comments}</span>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 min-w-[6rem] flex-1 rounded-full font-semibold sm:flex-none"
+                onClick={() => closeReplyComposer()}
+              >
+                ביטול
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                className="h-10 min-w-0 flex-[2] rounded-full font-semibold sm:flex-1"
+                disabled={!replyBody.trim() || replySending}
+                onClick={() => void handleInlineCommentSubmit()}
+              >
+                {replySending ? 'שולח…' : 'פרסום תגובה'}
+              </Button>
             </div>
           </div>
-        ) : (
-          <>
-            {!isDetail ? (
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-10 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
-                onClick={() => navigate(`/post/${post.id}`)}
-              >
-                תגובה
-                <MoveLeft className="size-4 shrink-0 opacity-90" aria-hidden />
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant={liked ? 'default' : 'secondary'}
-              className={cn(
-                'h-10 flex-1 rounded-full gap-2 font-semibold shadow-none',
-                isDetail && '!flex-none min-w-[8.5rem]',
-                liked && 'bg-rose-600 text-white hover:bg-rose-600/90 dark:bg-rose-600'
-              )}
-              onClick={() => setLiked((v) => !v)}
-              aria-pressed={liked}
-            >
-              <Heart
-                className={cn('size-4', liked && 'fill-current')}
-                aria-hidden
-              />
-              לייק
-            </Button>
-          </>
-        )}
+        ) : null}
       </div>
 
       {isAdmin ? (

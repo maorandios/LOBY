@@ -219,6 +219,14 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     []
   )
 
+  const bumpCommentCount = useCallback((postId: string) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId ? { ...p, comments: p.comments + 1 } : p
+      )
+    )
+  }, [])
+
   const showSentinelFooter =
     (filtered.length > 0 && hasMore) ||
     (mode !== 'all' && filtered.length === 0 && hasMore && posts.length > 0)
@@ -404,6 +412,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
                         onPollVote={handlePollVote}
                         isAdmin={isAdmin}
                         onAdminSuccess={() => void loadFeed({ silent: true })}
+                        onCommentPosted={bumpCommentCount}
                       />
                     </li>
                   ))}
