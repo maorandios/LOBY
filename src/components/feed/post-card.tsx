@@ -23,6 +23,8 @@ const CHIP =
 
 type Props = {
   post: FeedPost
+  /** Feed list vs detail: detail keeps same card chrome but no tap-through navigation and hides «תגובה». */
+  variant?: 'feed' | 'detail'
   onPollVote?: (
     postId: string,
     optionId: string
@@ -35,6 +37,7 @@ type Props = {
 
 export function PostCard({
   post,
+  variant = 'feed',
   onPollVote,
   isAdmin,
   onAdminSuccess,
@@ -49,6 +52,7 @@ export function PostCard({
   const compactCommentFooter = isUpdate || isReport || isPoll || isRequest
   const [liked, setLiked] = useState(false)
   const pinned = post.pinned
+  const isDetail = variant === 'detail'
 
   function goToPost() {
     navigate(`/post/${post.id}`)
@@ -101,6 +105,8 @@ export function PostCard({
       <AuthorNameWithAdminBadge
         name={post.author}
         authorIsAdmin={post.authorIsAdmin}
+        adminClusterClassName="gap-0.5"
+        badgeClassName="size-3"
       />
       <span aria-hidden className="text-muted-foreground/80">
         ·
@@ -118,27 +124,31 @@ export function PostCard({
   return (
     <article
       className={cn(
-        'flex cursor-pointer touch-manipulation flex-col overflow-hidden px-5 pb-7 pt-6 sm:px-6',
+        'flex touch-manipulation flex-col overflow-hidden px-5 pb-7 pt-6 sm:px-6',
         'transition-[box-shadow,transform] duration-150 motion-reduce:transition-colors',
-        'active:scale-[0.993]',
+        !isDetail && 'cursor-pointer active:scale-[0.993]',
+        isDetail && 'cursor-default',
         cardAccentByType(post.type),
         pinned && 'border-2 border-solid',
         pinned
           ? pinnedPostCardGlowClass()
           : 'hover:-translate-y-px hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.12)] dark:hover:shadow-[0_8px_28px_-6px_rgba(0,0,0,0.5)]'
       )}
-      style={pinned ? { borderColor: PINNED_POST_BORDER_HEX } : undefined}
+      style={
+        pinned ? { borderColor: PINNED_POST_BORDER_HEX } : undefined
+      }
       onClick={(e) => {
         if (adminSheetOpen) {
           e.preventDefault()
           e.stopPropagation()
           return
         }
+        if (isDetail) return
         goToPost()
       }}
     >
       <div className="flex w-full items-center justify-between gap-3">
-        <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 text-start text-[0.8rem] leading-snug text-foreground">
+        <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-0.5 text-start text-[0.64rem] leading-snug text-foreground">
           {residentMeta}
         </p>
         {metaEnd}
@@ -199,18 +209,25 @@ export function PostCard({
         onKeyDown={(e) => e.stopPropagation()}
       >
         {compactCommentFooter ? (
-          <div className="flex w-full items-stretch gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-10 min-w-0 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
-              onClick={() => navigate(`/post/${post.id}`)}
-            >
-              תגובה
-              <MoveLeft className="size-4 shrink-0 opacity-90" aria-hidden />
-            </Button>
+          <div
+            className={cn(
+              'flex w-full items-stretch gap-2',
+              isDetail && 'justify-end'
+            )}
+          >
+            {!isDetail ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-10 min-w-0 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
+                onClick={() => navigate(`/post/${post.id}`)}
+              >
+                תגובה
+                <MoveLeft className="size-4 shrink-0 opacity-90" aria-hidden />
+              </Button>
+            ) : null}
             <div
-              className="inline-flex h-10 shrink-0 items-center gap-1.5 px-4 text-sm font-semibold text-foreground"
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 px-4 text-sm font-semibold text-foreground sm:px-0"
               aria-label={`${post.comments} תגובות`}
             >
               <MessageCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -219,20 +236,23 @@ export function PostCard({
           </div>
         ) : (
           <>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-10 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
-              onClick={() => navigate(`/post/${post.id}`)}
-            >
-              תגובה
-              <MoveLeft className="size-4 shrink-0 opacity-90" aria-hidden />
-            </Button>
+            {!isDetail ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-10 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
+                onClick={() => navigate(`/post/${post.id}`)}
+              >
+                תגובה
+                <MoveLeft className="size-4 shrink-0 opacity-90" aria-hidden />
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant={liked ? 'default' : 'secondary'}
               className={cn(
                 'h-10 flex-1 rounded-full gap-2 font-semibold shadow-none',
+                isDetail && '!flex-none min-w-[8.5rem]',
                 liked && 'bg-rose-600 text-white hover:bg-rose-600/90 dark:bg-rose-600'
               )}
               onClick={() => setLiked((v) => !v)}

@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation, useNavigationType } from 'react-router-dom'
+
 import { useLayoutEffect, useRef } from 'react'
 
 import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
@@ -15,6 +16,9 @@ export function BuildingRequiredLayout() {
   const everHadBuildingRef = useRef(hasBuilding)
   if (hasBuilding) everHadBuildingRef.current = true
   const location = useLocation()
+  const hideFeedChrome =
+    location.pathname.startsWith('/post/') &&
+    /^\/post\/[^/]+$/.test(location.pathname)
   const navType = useNavigationType()
   const prevPathKey = useRef<string | null>(null)
   const pathKey = `${location.pathname}${location.search}`
@@ -52,7 +56,7 @@ export function BuildingRequiredLayout() {
           >
             <Outlet />
           </div>
-          <BottomTabBar />
+          {hideFeedChrome ? null : <BottomTabBar />}
         </div>
       </CreatePostComposerProvider>
     </FeedRefreshProvider>

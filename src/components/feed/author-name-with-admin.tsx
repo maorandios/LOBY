@@ -6,10 +6,15 @@ export function AuthorNameWithAdminBadge({
   name,
   authorIsAdmin,
   nameClassName,
+  adminClusterClassName,
+  badgeClassName,
 }: {
   name: string
   authorIsAdmin?: boolean
   nameClassName?: string
+  /** Extra classes on the inline admin row (e.g. tighter `gap-*` on post cards). */
+  adminClusterClassName?: string
+  badgeClassName?: string
 }) {
   if (!authorIsAdmin) {
     return (
@@ -24,7 +29,10 @@ export function AuthorNameWithAdminBadge({
   /* dir=rtl places first DOM item on inline-start (= physical right): badge hugs the right of the name cluster */
   return (
     <span
-      className="inline-flex min-w-0 items-center gap-1 leading-snug"
+      className={cn(
+        'inline-flex min-w-0 items-center gap-1 leading-snug',
+        adminClusterClassName
+      )}
       dir="rtl"
     >
       <span
@@ -32,7 +40,7 @@ export function AuthorNameWithAdminBadge({
         role="img"
         aria-label="מנהל ועד"
       >
-        <AdminBadgeCheck className="size-3.5" />
+        <AdminBadgeCheck className={cn('size-3.5', badgeClassName)} />
       </span>
       <span
         className={cn('font-semibold text-foreground', nameClassName)}

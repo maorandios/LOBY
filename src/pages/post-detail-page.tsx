@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { MoveRight } from 'lucide-react'
 
 import { AuthorNameWithAdminBadge } from '@/components/feed/author-name-with-admin'
 import { PostDetailSkeleton } from '@/components/feed/post-detail-skeleton'
-import { ProfileCornerLink } from '@/components/feed/feed-header'
 import { PostCard } from '@/components/feed/post-card'
 import { buttonVariants } from '@/components/ui/button'
 import {
@@ -81,28 +80,59 @@ export function PostDetailPage() {
     }
   }
 
-  return (
-    <div className="relative min-h-svh bg-feed-canvas pb-[calc(11rem+env(safe-area-inset-bottom,0px))] pt-[env(safe-area-inset-top)]">
-      <ProfileCornerLink />
-      <div className="mx-auto max-w-lg px-3 pb-4 pt-[max(3rem,env(safe-area-inset-top)-0.25rem)]">
-        <Link
-          to="/feed"
-          className={cn(
-            buttonVariants({ variant: 'ghost', size: 'lg' }),
-            'mb-4 min-h-11 touch-manipulation gap-2 ps-1 text-muted-foreground'
-          )}
-        >
-          <ArrowRight className="size-4" aria-hidden />
-          חזרה לפיד
-        </Link>
+  function handleBack() {
+    navigate(-1)
+  }
 
+  return (
+    <div
+      dir="rtl"
+      className="min-h-svh bg-feed-canvas pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))]"
+    >
+      {/* Same chrome as feed (`FeedHeader` sibling): pt-safe wrapper + matching header paddings */}
+      <div className="bg-feed-canvas pt-[env(safe-area-inset-top)]">
+        <header className="pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
+          <div
+            dir="ltr"
+            className="mx-auto grid w-full max-w-lg grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-0 px-2"
+          >
+            <span className="w-10 shrink-0 justify-self-center" aria-hidden />
+            <div
+              dir="rtl"
+              aria-hidden
+              className="flex min-h-10 min-w-0 items-center justify-center px-1 text-center"
+            />
+            <div className="flex justify-center pe-1">
+              <button
+                type="button"
+                onClick={() => handleBack()}
+                className={cn(
+                  buttonVariants({ variant: 'ghost', size: 'lg' }),
+                  'inline-flex min-h-10 min-w-10 shrink-0 items-center touch-manipulation gap-2 rounded-full px-2.5 pe-3 text-muted-foreground sm:px-3'
+                )}
+              >
+                חזרה
+                <MoveRight
+                  className="size-4 shrink-0 opacity-90"
+                  strokeWidth={2.2}
+                  aria-hidden
+                />
+              </button>
+            </div>
+          </div>
+        </header>
+      </div>
+
+      <div className="-mt-px flex flex-col bg-feed-canvas">
+        <div className="mx-auto w-full max-w-lg px-3 py-4">
         {loading ? (
           <PostDetailSkeleton />
         ) : error ? (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-start text-sm text-destructive">{error}</p>
         ) : post ? (
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-8">
             <PostCard
+              variant="detail"
               post={post}
               onPollVote={handlePollVote}
               isAdmin={isAdmin}
@@ -173,6 +203,7 @@ export function PostDetailPage() {
             </section>
           </div>
         ) : null}
+        </div>
       </div>
     </div>
   )
