@@ -20,7 +20,8 @@ import type { FeedPost } from '@/types/feed'
 import type { PostComment } from '@/types/feed'
 
 const fieldClass =
-  'flex min-h-10 w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-base outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55'
+  /** 16px on narrow viewports avoids iOS focus-zoom on comment field */
+  'flex min-h-10 w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-[16px] outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55 sm:text-base'
 
 export function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>()
@@ -73,7 +74,7 @@ export function PostDetailPage() {
     try {
       const inserted = await insertComment(postId, commentBody)
       if (inserted) {
-        setComments((prev) => [...prev, inserted])
+        setComments((prev) => [inserted, ...prev])
         setCommentBody('')
         setPost((p) => (p ? { ...p, comments: p.comments + 1 } : p))
       }

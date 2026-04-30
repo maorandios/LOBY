@@ -26,7 +26,8 @@ import { isPollPost, type FeedPost, type PostComment } from '@/types/feed'
 const INLINE_REPLY_FIELD_MAX_HEIGHT_PX = 192
 
 const commentFieldClass =
-  'box-border w-full resize-none overflow-x-hidden rounded-xl border-0 bg-background/40 px-3 py-2 text-[0.8rem] leading-normal text-foreground outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55'
+  /** 16px on small viewports avoids iOS focus zoom; tighter from `sm:` up */
+  'box-border w-full resize-none overflow-x-hidden rounded-xl border-0 bg-background/40 px-3 py-2 text-[16px] leading-normal text-foreground outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55 sm:text-[0.8rem]'
 
 const CHIP =
   'inline-flex max-w-full items-center gap-[0.21rem] rounded-full px-[0.425rem] py-[5px] text-[0.595rem] font-semibold tracking-tight'

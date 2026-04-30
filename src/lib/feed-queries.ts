@@ -219,8 +219,8 @@ async function fetchFeedCommentsPreview(
         console.error('[LOBY] fetchFeedCommentsPreview', postId, error)
         return [postId, [] as PostComment[]] as const
       }
-      const rowsAsc = [...(data ?? [])].reverse()
-      const mapped = rowsAsc.map(
+      const rowsNewestFirst = data ?? []
+      const mapped = rowsNewestFirst.map(
         (row) =>
           mapPreviewRowToPostComment(
             {
@@ -460,7 +460,7 @@ export async function fetchCommentsForPost(
     .from('comments')
     .select('id, author_id, body, created_at')
     .eq('post_id', postId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
 
   if (error) {
     console.error('[LOBY] fetchCommentsForPost', error)
@@ -716,13 +716,15 @@ export function withCommentIncrement(post: FeedPost): FeedPost {
   }
 }
 
-/** Append new comment server row and retain last {@link FEED_COMMENT_PREVIEW_LIMIT} for cards. */
+/** Prepend newest comment card preview; capped at {@link FEED_COMMENT_PREVIEW_LIMIT}, newest first. */
 export function mergeCommentIntoRecentPreview(
   post: FeedPost,
   inserted: PostComment
 ): FeedPost {
-  const nextPreview = [...(post.recentComments ?? []), inserted].slice(
-    -FEED_COMMENT_PREVIEW_LIMIT
+  const prev = post.recentComments ?? []
+  const nextPreview = [inserted, ...prev.filter((c) => c.id !== inserted.id)].slice(
+    0,
+    FEED_COMMENT_PREVIEW_LIMIT
   )
   return {
     ...post,
