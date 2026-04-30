@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils'
 import { isPollPost, type FeedPost } from '@/types/feed'
 
 const CHIP =
-  'inline-flex max-w-full items-center gap-1 rounded-full px-2 py-1.5 text-[0.7rem] font-semibold tracking-tight'
+  'inline-flex max-w-full items-center gap-[0.21rem] rounded-full px-[0.425rem] py-[5px] text-[0.595rem] font-semibold tracking-tight'
 
 type Props = {
   post: FeedPost
@@ -64,13 +64,17 @@ export function PostCard({
     <span
       className={cn(CHIP, 'shrink-0 text-foreground', typeBadgeClass(post.type))}
     >
-      <TypeIcon className="size-3.5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+      <TypeIcon
+        className="size-[0.744rem] shrink-0 opacity-90"
+        strokeWidth={1.75}
+        aria-hidden
+      />
       {postTypeChipLabel(post.type)}
     </span>
   )
 
   const metaEnd = (
-    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-[0.425rem]">
       {pinned ? (
         <span
           className={cn(
@@ -87,14 +91,14 @@ export function PostCard({
           type="button"
           variant="ghost"
           size="icon-sm"
-          className="shrink-0 rounded-full border border-zinc-300/90 bg-transparent shadow-none hover:bg-muted/30 dark:border-zinc-500 dark:hover:bg-muted/20"
+          className="size-[1.4875rem] min-h-[1.4875rem] min-w-[1.4875rem] shrink-0 rounded-full border border-zinc-300/90 bg-transparent p-0 shadow-none hover:bg-muted/30 dark:border-zinc-500 dark:hover:bg-muted/20 [&_svg]:size-[0.85rem]"
           aria-label="פעולות ניהול פוסט"
           onClick={(e) => {
             e.stopPropagation()
             setAdminSheetOpen(true)
           }}
         >
-          <Settings2 className="size-4" aria-hidden />
+          <Settings2 className="size-[0.85rem]" aria-hidden />
         </Button>
       ) : null}
     </div>
@@ -106,7 +110,6 @@ export function PostCard({
         name={post.author}
         authorIsAdmin={post.authorIsAdmin}
         adminClusterClassName="gap-0.5"
-        badgeClassName="size-3"
       />
       <span aria-hidden className="text-muted-foreground/80">
         ·
@@ -148,7 +151,7 @@ export function PostCard({
       }}
     >
       <div className="flex w-full items-center justify-between gap-3">
-        <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-0.5 text-start text-[0.64rem] leading-snug text-foreground">
+        <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-0.5 text-start text-[0.736rem] leading-snug text-foreground">
           {residentMeta}
         </p>
         {metaEnd}
