@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, MoveLeft, Settings2 } from 'lucide-react'
+import { Heart, MessageCircle, MoveLeft, Settings } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
@@ -74,7 +74,7 @@ export function PostCard({
   )
 
   const metaEnd = (
-    <div className="flex shrink-0 flex-wrap items-center justify-end gap-[0.425rem]">
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
       {pinned ? (
         <span
           className={cn(
@@ -91,14 +91,14 @@ export function PostCard({
           type="button"
           variant="ghost"
           size="icon-sm"
-          className="size-[1.4875rem] min-h-[1.4875rem] min-w-[1.4875rem] shrink-0 rounded-full border border-zinc-300/90 bg-transparent p-0 shadow-none hover:bg-muted/30 dark:border-zinc-500 dark:hover:bg-muted/20 [&_svg]:size-[0.85rem]"
+          className="shrink-0 rounded-full border border-zinc-300/90 bg-transparent shadow-none hover:bg-muted/30 dark:border-zinc-500 dark:hover:bg-muted/20"
           aria-label="פעולות ניהול פוסט"
           onClick={(e) => {
             e.stopPropagation()
             setAdminSheetOpen(true)
           }}
         >
-          <Settings2 className="size-[0.85rem]" aria-hidden />
+          <Settings className="size-4" aria-hidden />
         </Button>
       ) : null}
     </div>
@@ -110,6 +110,7 @@ export function PostCard({
         name={post.author}
         authorIsAdmin={post.authorIsAdmin}
         adminClusterClassName="gap-0.5"
+        badgeClassName="size-[0.93rem]"
       />
       <span aria-hidden className="text-muted-foreground/80">
         ·

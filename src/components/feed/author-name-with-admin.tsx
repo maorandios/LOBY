@@ -1,7 +1,9 @@
-import { AdminBadgeCheck } from '@/components/admin/admin-badge-check'
+import { ShieldUser } from 'lucide-react'
+
+import { POST_CREATE_BUTTON_HEX } from '@/components/feed/post-type-styles'
 import { cn } from '@/lib/utils'
 
-/** Author display name with optional מנהל ועד badge when `authorIsAdmin` from `building_members`. */
+/** Author display name with optional מנהל ועד mark when `authorIsAdmin` from `building_members`. */
 export function AuthorNameWithAdminBadge({
   name,
   authorIsAdmin,
@@ -40,7 +42,12 @@ export function AuthorNameWithAdminBadge({
         role="img"
         aria-label="מנהל ועד"
       >
-        <AdminBadgeCheck className={cn('size-3.5', badgeClassName)} />
+        <ShieldUser
+          className={cn('size-3.5 shrink-0', badgeClassName)}
+          style={{ color: POST_CREATE_BUTTON_HEX }}
+          strokeWidth={2}
+          aria-hidden
+        />
       </span>
       <span
         className={cn('font-semibold text-foreground', nameClassName)}
