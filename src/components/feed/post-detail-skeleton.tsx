@@ -27,13 +27,11 @@ export function PostDetailSkeleton() {
       </div>
 
       <div className="space-y-3">
-        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-5 w-40" />
         <div className="flex flex-col gap-3">
           <CommentSkeleton />
           <CommentSkeleton />
         </div>
-        <Skeleton className="h-[88px] w-full rounded-xl" />
-        <Skeleton className="h-10 w-full rounded-full" />
       </div>
     </div>
   )

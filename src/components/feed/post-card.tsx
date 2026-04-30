@@ -7,6 +7,11 @@ import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
 import { PollBlock } from '@/components/feed/poll-block'
 import { ResidentMetaUserIcon } from '@/components/feed/resident-meta-user-icon'
 import {
+  COMMENT_COMPOSER_MAX_HEIGHT_PX,
+  COMMENT_COMPOSER_TEXTAREA_CLASS,
+  normalizeCommentSnippetLine,
+} from '@/components/feed/comment-shared'
+import {
   cardAccentByType,
   pinnedPostCardGlowClass,
   PINNED_POST_BORDER_HEX,
@@ -22,20 +27,8 @@ import { insertComment } from '@/lib/feed-queries'
 import { cn } from '@/lib/utils'
 import { isPollPost, type FeedPost, type PostComment } from '@/types/feed'
 
-/** Inline reply field: one line visually; grows with content up to {@link INLINE_REPLY_FIELD_MAX_HEIGHT_PX}. */
-const INLINE_REPLY_FIELD_MAX_HEIGHT_PX = 192
-
-const commentFieldClass =
-  /** 16px on small viewports avoids iOS focus zoom; tighter from `sm:` up */
-  'box-border w-full resize-none overflow-x-hidden rounded-xl border-0 bg-background/40 px-3 py-2 text-[16px] leading-normal text-foreground outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55 sm:text-[0.8rem]'
-
 const CHIP =
   'inline-flex max-w-full items-center gap-[0.21rem] rounded-full px-[0.425rem] py-[5px] text-[0.595rem] font-semibold tracking-tight'
-
-/** Feed preview: one plain line — collapse user newlines / runs of spaces. */
-function commentPreviewSingleLine(text: string): string {
-  return text.replace(/\r\n|\r|\n/g, ' ').replace(/\s+/g, ' ').trim()
-}
 
 type Props = {
   post: FeedPost
@@ -105,10 +98,10 @@ export function PostCard({
     const el = replyTextareaRef.current
     if (!el) return
     el.style.height = 'auto'
-    const next = Math.min(el.scrollHeight, INLINE_REPLY_FIELD_MAX_HEIGHT_PX)
+    const next = Math.min(el.scrollHeight, COMMENT_COMPOSER_MAX_HEIGHT_PX)
     el.style.height = `${next}px`
     el.style.overflowY =
-      el.scrollHeight > INLINE_REPLY_FIELD_MAX_HEIGHT_PX ? 'auto' : 'hidden'
+      el.scrollHeight > COMMENT_COMPOSER_MAX_HEIGHT_PX ? 'auto' : 'hidden'
   }, [replyBody, replyOpen, isDetail])
 
   async function handleInlineCommentSubmit() {
@@ -278,46 +271,51 @@ export function PostCard({
       </div>
 
       <div
-        className="mt-8 flex flex-col gap-3"
+        className={cn(
+          'flex flex-col gap-3',
+          (!isDetail || !compactCommentFooter || replyOpen) && 'mt-8'
+        )}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
         <div className={cn('flex gap-2', compactCommentFooter && !isDetail && 'w-full')}>
           {compactCommentFooter ? (
-            <div
-              className={cn(
-                'flex w-full items-stretch gap-2',
-                isDetail && 'justify-end'
-              )}
-            >
-              {!isDetail ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-10 min-w-0 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
-                  aria-expanded={replyOpen}
-                  aria-controls={`feed-inline-reply-${post.id}`}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleReplyComposer()
-                  }}
-                >
-                  <MessageCirclePlus
-                    className="size-4 shrink-0 opacity-90"
-                    strokeWidth={2}
-                    aria-hidden
-                  />
-                  תגובה
-                </Button>
-              ) : null}
+            isDetail ? null : (
               <div
-                className="inline-flex h-10 shrink-0 items-center gap-1.5 px-4 text-sm font-semibold text-foreground sm:px-0"
-                aria-label={`${post.comments} תגובות`}
+                className={cn(
+                  'flex w-full items-stretch gap-2',
+                  isDetail && 'justify-end'
+                )}
               >
-                <MessageCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                <span className="tabular-nums">{post.comments}</span>
+                {!isDetail ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 min-w-0 flex-1 rounded-full gap-2 border border-zinc-300 bg-transparent font-semibold shadow-none hover:bg-muted/35 dark:border-zinc-500 dark:hover:bg-muted/25"
+                    aria-expanded={replyOpen}
+                    aria-controls={`feed-inline-reply-${post.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleReplyComposer()
+                    }}
+                  >
+                    <MessageCirclePlus
+                      className="size-4 shrink-0 opacity-90"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                    תגובה
+                  </Button>
+                ) : null}
+                <div
+                  className="inline-flex h-10 shrink-0 items-center gap-1.5 px-4 text-sm font-semibold text-foreground sm:px-0"
+                  aria-label={`${post.comments} תגובות`}
+                >
+                  <MessageCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <span className="tabular-nums">{post.comments}</span>
+                </div>
               </div>
-            </div>
+            )
           ) : (
             <>
               {!isDetail ? (
@@ -391,7 +389,7 @@ export function PostCard({
               id={`feed-inline-reply-field-${post.id}`}
               dir="rtl"
               rows={1}
-              className={commentFieldClass}
+              className={COMMENT_COMPOSER_TEXTAREA_CLASS}
               placeholder="מה תרצו להגיב?"
               value={replyBody}
               onChange={(e) => setReplyBody(e.target.value)}
@@ -477,9 +475,9 @@ export function PostCard({
                 <p
                   className="mt-1 min-w-0 text-start text-[0.8rem] leading-normal text-foreground line-clamp-1"
                   dir="rtl"
-                  title={commentPreviewSingleLine(c.text)}
+                  title={normalizeCommentSnippetLine(c.text)}
                 >
-                  {commentPreviewSingleLine(c.text)}
+                  {normalizeCommentSnippetLine(c.text)}
                 </p>
               </li>
             ))}

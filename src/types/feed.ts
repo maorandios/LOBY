@@ -41,6 +41,8 @@ export interface FeedPostBase {
   /** Preformatted relative time for mock display */
   relativeTime: string
   title: string
+  /** auth.users id — for client checks (e.g. author delete) */
+  authorId: string
   author: string
   apartment: string
   /** Building committee admin — badge beside author name */

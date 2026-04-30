@@ -360,6 +360,7 @@ function rowToFeedPost(
     pinned: Boolean((row as { pinned?: boolean }).pinned),
     relativeTime: rel,
     title: row.title,
+    authorId: row.author_id,
     author: displayName(memberMap, row.author_id),
     apartment: apartmentLabel(memberMap, row.author_id),
     authorIsAdmin: memberIsAdmin(memberMap, row.author_id),
@@ -699,7 +700,7 @@ export async function adminMarkPollDecided(
   )
 }
 
-/** Delete post — building admins only (RLS). Cascades comments / poll data. */
+/** Delete post — RLS: building admins or the post author. Cascades comments / poll data. */
 export async function adminDeletePost(
   postId: string
 ): Promise<{ ok: boolean; error?: string }> {

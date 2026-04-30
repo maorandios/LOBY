@@ -39,6 +39,11 @@ type Props = {
   onSuccess: () => void
   /** Called after successful delete (e.g. navigate away). */
   onDeleted?: () => void
+  /**
+   * admin: full ניהול פוסט sheet.
+   * authorDelete: open directly on bottom delete-confirm step (post author only).
+   */
+  entryPoint?: 'admin' | 'authorDelete'
 }
 
 /** Mirrors `MENU_CHOICE_ROW` in create-post-sheet (דיווח/סקר/etc. cards). */
@@ -181,11 +186,13 @@ export function PostAdminSheet({
   onOpenChange,
   onSuccess,
   onDeleted,
+  entryPoint = 'admin',
 }: Props) {
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const [sheetError, setSheetError] = useState<string | null>(null)
   const [panel, setPanel] = useState<'main' | 'deleteConfirm'>('main')
 
+  const authorDeleteFlow = entryPoint === 'authorDelete'
   const isPoll = isPollPost(post)
   const isReport = post.type === 'דיווח'
 
@@ -240,26 +247,35 @@ export function PostAdminSheet({
   }, [open])
 
   useEffect(() => {
-    if (!open) setPanel('main')
-  }, [open])
+    if (!open) {
+      setPanel('main')
+      return
+    }
+    if (entryPoint === 'authorDelete') {
+      setPanel('deleteConfirm')
+    }
+  }, [open, entryPoint])
 
   useEffect(() => {
     if (!mounted) return
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (busyKeyRef.current !== null) return
-        if (panel === 'deleteConfirm') {
-          e.preventDefault()
-          setPanel('main')
-          return
-        }
+      if (e.key !== 'Escape') return
+      if (busyKeyRef.current !== null) return
+      if (panel === 'deleteConfirm') {
         e.preventDefault()
-        onOpenChangeRef.current(false)
+        if (authorDeleteFlow) {
+          onOpenChangeRef.current(false)
+        } else {
+          setPanel('main')
+        }
+        return
       }
+      e.preventDefault()
+      onOpenChangeRef.current(false)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [mounted, panel])
+  }, [mounted, panel, authorDeleteFlow])
 
   async function wrap(
     key: string,
@@ -300,6 +316,11 @@ export function PostAdminSheet({
   function closeBackdrop() {
     if (busyKeyRef.current !== null) return
     if (panel === 'deleteConfirm') {
+      if (authorDeleteFlow) {
+        onOpenChange(false)
+        consumeGhostPointerAfterBackdropClose()
+        return
+      }
       setPanel('main')
       consumeGhostPointerAfterBackdropClose()
       return
@@ -346,7 +367,9 @@ export function PostAdminSheet({
         role="dialog"
         aria-modal="true"
         aria-label={
-          panel === 'deleteConfirm' ? 'מחיקת פוסט' : 'ניהול פוסט'
+          panel === 'deleteConfirm' || authorDeleteFlow
+            ? 'מחיקת פוסט'
+            : 'ניהול פוסט'
         }
         dir="rtl"
         className={cn(
@@ -363,7 +386,7 @@ export function PostAdminSheet({
         <div
           className="flex min-w-0 w-full flex-col pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-[max(env(safe-area-inset-top,0px),0.75rem)] text-sm text-popover-foreground"
         >
-          {panel === 'main' ? (
+          {panel === 'main' && !authorDeleteFlow ? (
             <>
               <div className="flex min-h-[3.5rem] w-full items-center gap-3 px-4 pb-1 pt-4 text-start">
                 <span
@@ -503,9 +526,17 @@ export function PostAdminSheet({
                   variant="ghost"
                   size="icon"
                   className="size-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
-                  aria-label="חזרה לניהול פוסט"
+                  aria-label={
+                    authorDeleteFlow ? 'סגירה' : 'חזרה לניהול פוסט'
+                  }
                   disabled={busyKey !== null}
-                  onClick={() => setPanel('main')}
+                  onClick={() => {
+                    if (authorDeleteFlow) {
+                      onOpenChange(false)
+                      return
+                    }
+                    setPanel('main')
+                  }}
                 >
                   <MoveLeft
                     className="size-5"

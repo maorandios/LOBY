@@ -1,12 +1,17 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { MoveRight } from 'lucide-react'
+import { MessagesSquare, MoveRight, ShieldUser, Trash2 } from 'lucide-react'
 
-import { AuthorNameWithAdminBadge } from '@/components/feed/author-name-with-admin'
+import {
+  COMMENT_COMPOSER_MAX_HEIGHT_PX,
+  COMMENT_COMPOSER_TEXTAREA_CLASS,
+} from '@/components/feed/comment-shared'
 import { PinnedPostNotice } from '@/components/feed/pinned-post-notice'
 import { PostDetailSkeleton } from '@/components/feed/post-detail-skeleton'
+import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
 import { ResidentMetaUserIcon } from '@/components/feed/resident-meta-user-icon'
 import { PostCard } from '@/components/feed/post-card'
+import { POST_CREATE_BUTTON_HEX } from '@/components/feed/post-type-styles'
 import { buttonVariants } from '@/components/ui/button'
 import {
   fetchCommentsForPost,
@@ -15,17 +20,21 @@ import {
   insertPollVote,
 } from '@/lib/feed-queries'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
+import { useAuth } from '@/auth/use-auth'
 import { cn } from '@/lib/utils'
-import type { FeedPost } from '@/types/feed'
-import type { PostComment } from '@/types/feed'
+import type { FeedPost, PostComment } from '@/types/feed'
 
-const fieldClass =
-  /** 16px on narrow viewports avoids iOS focus-zoom on comment field */
-  'flex min-h-10 w-full rounded-xl border border-border/80 bg-background px-3 py-2 text-[16px] outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55 sm:text-base'
+/** Match {@link BottomTabBar} nav strip (no FAB). */
+const DETAIL_COMMENT_BAR_CHROME =
+  'border-t border-zinc-200/70 bg-feed-canvas backdrop-blur-xl supports-[backdrop-filter]:bg-feed-canvas/90 dark:border-white/10'
+
+const MAIN_SCROLL_BOTTOM =
+  'pb-[calc(env(safe-area-inset-bottom,0px)+8.75rem)]'
 
 export function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>()
   const navigate = useNavigate()
+  const { session } = useAuth()
   const { isAdmin } = useBuildingMembership()
   const [post, setPost] = useState<FeedPost | null>(null)
   const [comments, setComments] = useState<PostComment[]>([])
@@ -33,6 +42,8 @@ export function PostDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [commentBody, setCommentBody] = useState('')
   const [sending, setSending] = useState(false)
+  const [authorDeleteOpen, setAuthorDeleteOpen] = useState(false)
+  const commentTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const reload = useCallback(async () => {
     if (!postId) return
@@ -58,6 +69,18 @@ export function PostDetailPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- async post load triggers state updates
     void reload()
   }, [reload])
+
+  /** Inline composer: one line tall by default; grow until capped. */
+  useLayoutEffect(() => {
+    if (!post || loading || error) return
+    const el = commentTextareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    const next = Math.min(el.scrollHeight, COMMENT_COMPOSER_MAX_HEIGHT_PX)
+    el.style.height = `${next}px`
+    el.style.overflowY =
+      el.scrollHeight > COMMENT_COMPOSER_MAX_HEIGHT_PX ? 'auto' : 'hidden'
+  }, [commentBody, post, loading, error])
 
   async function handlePollVote(pid: string, optionId: string) {
     const res = await insertPollVote(pid, optionId)
@@ -87,19 +110,36 @@ export function PostDetailPage() {
     navigate(-1)
   }
 
+  const showComposerBar = Boolean(post && !loading && !error)
+  const viewerId = session?.user?.id
+  const showAuthorDeleteTrash =
+    Boolean(post && viewerId && post.authorId === viewerId)
+
   return (
-    <div
-      dir="rtl"
-      className="min-h-svh bg-feed-canvas pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))]"
-    >
-      {/* Same chrome as feed (`FeedHeader` sibling): pt-safe wrapper + matching header paddings */}
+    <div dir="rtl" className="min-h-svh bg-feed-canvas">
       <div className="bg-feed-canvas pt-[env(safe-area-inset-top)]">
         <header className="pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
           <div
             dir="ltr"
             className="mx-auto grid w-full max-w-lg grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-0 px-2"
           >
-            <span className="w-10 shrink-0 justify-self-center" aria-hidden />
+            <div className="flex w-10 shrink-0 justify-center justify-self-center">
+              {showAuthorDeleteTrash ? (
+                <button
+                  type="button"
+                  onClick={() => setAuthorDeleteOpen(true)}
+                  className={cn(
+                    buttonVariants({ variant: 'ghost', size: 'icon' }),
+                    'inline-flex size-10 touch-manipulation shrink-0 rounded-full text-muted-foreground hover:text-foreground'
+                  )}
+                  aria-label="מחיקת פוסט"
+                >
+                  <Trash2 className="size-[1.125rem]" strokeWidth={2} aria-hidden />
+                </button>
+              ) : (
+                <span className="inline-block size-10 shrink-0" aria-hidden />
+              )}
+            </div>
             <div
               dir="rtl"
               aria-hidden
@@ -130,18 +170,29 @@ export function PostDetailPage() {
         <div
           className={cn(
             'mx-auto w-full max-w-lg px-3',
-            !loading && post?.pinned ? 'pb-4 pt-0' : 'py-4'
+            !loading && post?.pinned ? 'pb-4 pt-0' : 'py-4',
+            showComposerBar && MAIN_SCROLL_BOTTOM
           )}
         >
-        {loading ? (
-          <PostDetailSkeleton />
-        ) : error ? (
-          <p className="text-start text-sm text-destructive">{error}</p>
-        ) : post ? (
-          <div className="flex flex-col gap-8">
-            {post.pinned ? (
-              <div className="flex flex-col gap-5 pt-5">
-                <PinnedPostNotice />
+          {loading ? (
+            <PostDetailSkeleton />
+          ) : error ? (
+            <p className="text-start text-sm text-destructive">{error}</p>
+          ) : post ? (
+            <div className="flex flex-col gap-8">
+              {post.pinned ? (
+                <div className="flex flex-col gap-5 pt-5">
+                  <PinnedPostNotice />
+                  <PostCard
+                    variant="detail"
+                    post={post}
+                    onPollVote={handlePollVote}
+                    isAdmin={isAdmin}
+                    onAdminSuccess={() => void reload()}
+                    onAdminDelete={() => navigate('/feed', { replace: true })}
+                  />
+                </div>
+              ) : (
                 <PostCard
                   variant="detail"
                   post={post}
@@ -150,86 +201,135 @@ export function PostDetailPage() {
                   onAdminSuccess={() => void reload()}
                   onAdminDelete={() => navigate('/feed', { replace: true })}
                 />
-              </div>
-            ) : (
-              <PostCard
-                variant="detail"
-                post={post}
-                onPollVote={handlePollVote}
-                isAdmin={isAdmin}
-                onAdminSuccess={() => void reload()}
-                onAdminDelete={() => navigate('/feed', { replace: true })}
-              />
-            )}
+              )}
 
-            <section className="space-y-3 text-start" aria-labelledby="comments-heading">
-              <h2
-                id="comments-heading"
-                className="text-base font-semibold text-foreground"
+              <section
+                className="border-t border-border/40 px-5 pt-5 text-start"
+                aria-labelledby="comments-heading"
               >
-                תגובות ({comments.length})
-              </h2>
-              <ul className="flex flex-col gap-3">
-                {comments.length === 0 ? (
-                  <li className="text-sm text-muted-foreground">
-                    אין תגובות עדיין
-                  </li>
-                ) : (
-                  comments.map((c) => (
-                    <li
-                      key={c.id}
-                      className="rounded-2xl border border-border/60 bg-card/80 px-4 py-3 transition-[transform] duration-100 motion-reduce:transition-none active:scale-[0.993]"
-                    >
-                      <p className="flex flex-wrap items-center gap-x-0.5 text-[0.8rem] text-muted-foreground">
-                        {!c.authorIsAdmin ? <ResidentMetaUserIcon /> : null}
-                        <AuthorNameWithAdminBadge
-                          name={c.author}
-                          authorIsAdmin={c.authorIsAdmin}
-                          nameClassName="text-[0.8rem]"
-                          adminClusterClassName="gap-0.5"
-                          badgeClassName="size-[0.93rem]"
-                        />
-                        <span aria-hidden> · </span>
-                        דירה {c.apartment}
-                        <span aria-hidden> · </span>
-                        <span className="tabular-nums">{c.relativeTime}</span>
-                      </p>
-                      <p className="mt-2 text-sm leading-relaxed text-foreground">{c.text}</p>
-                    </li>
-                  ))
-                )}
-              </ul>
-
-              <div className="rounded-2xl border border-border/60 bg-card/80 p-3">
-                <label htmlFor="new-comment" className="sr-only">
-                  תגובה חדשה
-                </label>
-                <textarea
-                  id="new-comment"
-                  rows={3}
-                  dir="rtl"
-                  className={cn(fieldClass, 'min-h-[88px] resize-y')}
-                  placeholder="כתבו תגובה..."
-                  value={commentBody}
-                  onChange={(e) => setCommentBody(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className={cn(
-                    buttonVariants({ variant: 'default' }),
-                    'mt-2 h-10 w-full rounded-full touch-manipulation font-semibold duration-150'
-                  )}
-                  disabled={sending || !commentBody.trim()}
-                  onClick={() => void handleSendComment()}
+                <h2
+                  id="comments-heading"
+                  className="mb-3 flex flex-wrap items-center justify-start gap-x-1.5 gap-y-1 text-[0.7rem] font-medium text-muted-foreground"
                 >
-                  {sending ? 'שולח…' : 'פרסום תגובה'}
-                </button>
-              </div>
-            </section>
-          </div>
-        ) : null}
+                  <MessagesSquare
+                    className="size-[1em] shrink-0 opacity-90"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  כל התגובות
+                  <span aria-hidden className="text-muted-foreground/80">
+                    ·
+                  </span>
+                  <span className="tabular-nums">{comments.length}</span>
+                </h2>
+                <ul className="flex flex-col gap-4">
+                  {comments.length === 0 ? (
+                    <li className="text-sm text-muted-foreground">
+                      אין תגובות עדיין
+                    </li>
+                  ) : (
+                    comments.map((c) => (
+                      <li key={c.id}>
+                        <div className="flex flex-wrap items-baseline justify-start gap-x-1 text-start text-[0.72rem] leading-snug">
+                          {c.authorIsAdmin ? (
+                            <ShieldUser
+                              className="inline-block size-[0.744rem] shrink-0 translate-y-[0.05em]"
+                              style={{ color: POST_CREATE_BUTTON_HEX }}
+                              strokeWidth={2}
+                              aria-hidden
+                            />
+                          ) : (
+                            <ResidentMetaUserIcon className="size-[0.744rem] translate-y-[0.05em]" />
+                          )}
+                          <span className="font-semibold text-foreground">
+                            {c.author}
+                          </span>
+                          <span aria-hidden className="text-muted-foreground/80">
+                            ·
+                          </span>
+                          <span className="tabular-nums text-muted-foreground">
+                            {c.relativeTime}
+                          </span>
+                        </div>
+                        <p
+                          className="mt-1 min-w-0 text-start text-[0.8rem] leading-normal text-foreground whitespace-pre-wrap break-words"
+                          dir="rtl"
+                        >
+                          {c.text}
+                        </p>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </section>
+            </div>
+          ) : null}
         </div>
       </div>
+
+      {showComposerBar ? (
+        <div
+          className={cn(
+            'fixed inset-x-0 bottom-0 z-40',
+            DETAIL_COMMENT_BAR_CHROME
+          )}
+        >
+          <div className="mx-auto w-full max-w-lg px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+            <div className="px-5">
+              <label htmlFor="new-comment" className="sr-only">
+                תגובה חדשה
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                <textarea
+                ref={commentTextareaRef}
+                id="new-comment"
+                rows={1}
+                dir="rtl"
+                className={cn(
+                  COMMENT_COMPOSER_TEXTAREA_CLASS,
+                  'flex-1 overflow-y-hidden'
+                )}
+                placeholder="מה תרצו להגיב?"
+                value={commentBody}
+                onChange={(e) => setCommentBody(e.target.value)}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === 'Enter' &&
+                    !e.shiftKey &&
+                    (e.ctrlKey || e.metaKey)
+                  ) {
+                    e.preventDefault()
+                    void handleSendComment()
+                  }
+                }}
+                />
+              <button
+                type="button"
+                className={cn(
+                  buttonVariants({ variant: 'default' }),
+                  'flex h-10 w-full shrink-0 touch-manipulation items-center justify-center rounded-full px-5 font-semibold duration-150 sm:h-auto sm:min-h-[52px] sm:min-w-[9rem] sm:w-auto'
+                )}
+                disabled={sending || !commentBody.trim()}
+                onClick={() => void handleSendComment()}
+              >
+                {sending ? 'שולח…' : 'פרסום תגובה'}
+              </button>
+            </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {post ? (
+        <PostAdminSheet
+          post={post}
+          open={authorDeleteOpen}
+          onOpenChange={setAuthorDeleteOpen}
+          onSuccess={() => void reload()}
+          onDeleted={() => navigate('/feed', { replace: true })}
+          entryPoint="authorDelete"
+        />
+      ) : null}
     </div>
   )
 }
