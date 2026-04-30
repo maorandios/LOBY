@@ -20,10 +20,12 @@ const TITLE = 'text-[1rem] font-semibold tracking-tight text-foreground sm:text-
 
 const LABEL = 'text-[0.8125rem] font-medium leading-tight text-muted-foreground'
 
-const VALUE =
-  'mt-1 break-words text-base font-semibold leading-snug text-foreground sm:text-[1rem]'
+/** Value under label in settings grid rows */
+const VALUE_IN_GRID =
+  'mt-0 break-words text-base font-semibold leading-snug text-foreground sm:text-[1rem]'
 
-const ICON_WRAP = 'flex w-10 shrink-0 items-center justify-center'
+const ICON_WRAP =
+  'flex h-5 w-10 shrink-0 items-center justify-center self-start text-muted-foreground sm:w-11'
 
 const FIELD =
   'mt-1 box-border h-10 w-full rounded-xl border border-border/80 bg-background/30 px-3 text-base text-foreground outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55'
@@ -43,13 +45,16 @@ function SettingsRowDisplay({
 }) {
   const shown = value.trim() !== '' ? value : 'לא צוין'
   return (
-    <div className="flex flex-row items-start gap-2 py-3.5 sm:gap-3" dir="rtl">
+    <div
+      className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 py-3.5 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:gap-x-3"
+      dir="rtl"
+    >
       <span className={ICON_WRAP} aria-hidden>
-        <Icon className="size-[1.125rem] text-muted-foreground" strokeWidth={2} />
+        <Icon className="size-[1.125rem] shrink-0" strokeWidth={2} />
       </span>
-      <div className="min-w-0 flex-1 text-start" dir="rtl">
+      <div className="min-w-0 text-start leading-tight" dir="rtl">
         {emailReadOnlyHint ? (
-          <div className="flex flex-row flex-wrap items-baseline justify-start gap-1.5 leading-tight">
+          <div className="flex flex-row flex-wrap items-baseline justify-start gap-1.5">
             <span className={LABEL}>{label}</span>
             <span className="text-muted-foreground/70 select-none" aria-hidden>
               ·
@@ -61,14 +66,18 @@ function SettingsRowDisplay({
         ) : (
           <p className={cn(LABEL, 'text-start')}>{label}</p>
         )}
-        <p
-          className={cn(VALUE, valueDir === 'ltr' ? 'text-end' : 'text-start')}
-          dir={valueDir ?? 'rtl'}
-          lang={valueDir === 'ltr' ? 'en' : 'he'}
-        >
-          {shown}
-        </p>
       </div>
+      <p
+        className={cn(
+          'col-start-2',
+          VALUE_IN_GRID,
+          valueDir === 'ltr' ? 'text-end' : 'text-start',
+        )}
+        dir={valueDir ?? 'rtl'}
+        lang={valueDir === 'ltr' ? 'en' : 'he'}
+      >
+        {shown}
+      </p>
     </div>
   )
 }
@@ -146,9 +155,9 @@ export function ProfileUserSettingsCard({
       aria-labelledby="profile-user-settings-heading"
       dir="rtl"
       lang="he"
-      className="rounded-2xl bg-muted/20 px-4 py-5 ring-1 ring-border/35 dark:bg-muted/10 dark:ring-border/25"
+      className="px-4 py-5"
     >
-      <div className="flex flex-row items-start justify-between gap-2 border-b border-dotted border-border/55 pb-3">
+      <div className="flex flex-row items-center justify-between gap-2 pb-3">
         <h2 id="profile-user-settings-heading" className={cn(TITLE, 'min-w-0 flex-1 ps-2 text-start')}>
           הגדרות משתמש
         </h2>
@@ -203,36 +212,42 @@ export function ProfileUserSettingsCard({
         </p>
       ) : null}
 
-      <div className="divide-y divide-dotted divide-border/50">
+      <div>
         {editing ? (
           <>
-            <div className="flex flex-row items-start gap-2 pt-4 sm:gap-3" dir="rtl">
-              <span className={ICON_WRAP}>
-                <CircleUserRound className="size-[1.125rem] text-muted-foreground" strokeWidth={2} />
+            <div
+              className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 pt-4 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:gap-x-3"
+              dir="rtl"
+            >
+              <span className={ICON_WRAP} aria-hidden>
+                <CircleUserRound className="size-[1.125rem] shrink-0" strokeWidth={2} />
               </span>
-              <div className="min-w-0 flex-1 text-start" dir="rtl">
+              <div className="min-w-0 text-start leading-tight" dir="rtl">
                 <label htmlFor="profile-edit-name" className={cn(LABEL, 'block text-start')}>
                   שם מלא
                 </label>
-                <input
-                  id="profile-edit-name"
-                  name="fullName"
-                  type="text"
-                  autoComplete="name"
-                  value={nameDraft}
-                  onChange={(e) => setNameDraft(e.target.value)}
-                  className={cn(FIELD, 'text-start')}
-                  dir="rtl"
-                />
               </div>
+              <input
+                id="profile-edit-name"
+                name="fullName"
+                type="text"
+                autoComplete="name"
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                className={cn(FIELD, 'col-start-2 mt-0 text-start')}
+                dir="rtl"
+              />
             </div>
 
-            <div className="flex flex-row items-start gap-2 py-4 sm:gap-3" dir="rtl">
-              <span className={ICON_WRAP}>
-                <Mail className="size-[1.125rem] text-muted-foreground" strokeWidth={2} />
+            <div
+              className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 py-4 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:gap-x-3"
+              dir="rtl"
+            >
+              <span className={ICON_WRAP} aria-hidden>
+                <Mail className="size-[1.125rem] shrink-0" strokeWidth={2} />
               </span>
-              <div className="min-w-0 flex-1 text-start" dir="rtl">
-                <div className="flex flex-row flex-wrap items-baseline justify-start gap-1.5 leading-tight">
+              <div className="min-w-0 text-start leading-tight" dir="rtl">
+                <div className="flex flex-row flex-wrap items-baseline justify-start gap-1.5">
                   <span className={LABEL}>{'כתובת דוא"ל'}</span>
                   <span className="text-muted-foreground/70 select-none" aria-hidden>
                     ·
@@ -241,58 +256,64 @@ export function ProfileUserSettingsCard({
                     לא ניתן לעריכה
                   </span>
                 </div>
-                <p
-                  className={cn(VALUE, 'mt-2 text-end opacity-80')}
-                  dir="ltr"
-                  lang="en"
-                >
+              </div>
+              <p
+                className={cn('col-start-2', VALUE_IN_GRID, 'text-end opacity-80')}
+                dir="ltr"
+                lang="en"
+              >
                   {emailShown || 'לא צוין'}
                 </p>
-              </div>
             </div>
 
-            <div className="flex flex-row items-start gap-2 py-4 sm:gap-3" dir="rtl">
-              <span className={ICON_WRAP}>
-                <Phone className="size-[1.125rem] text-muted-foreground" strokeWidth={2} />
+            <div
+              className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 py-4 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:gap-x-3"
+              dir="rtl"
+            >
+              <span className={ICON_WRAP} aria-hidden>
+                <Phone className="size-[1.125rem] shrink-0" strokeWidth={2} />
               </span>
-              <div className="min-w-0 flex-1 text-start" dir="rtl">
+              <div className="min-w-0 text-start leading-tight" dir="rtl">
                 <label htmlFor="profile-edit-phone" className={cn(LABEL, 'block text-start')}>
                   מספר טלפון
                 </label>
-                <input
-                  id="profile-edit-phone"
-                  name="phone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  dir="ltr"
-                  value={phoneDraft}
-                  onChange={(e) => setPhoneDraft(e.target.value)}
-                  className={cn(FIELD, 'text-end')}
-                />
               </div>
+              <input
+                id="profile-edit-phone"
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                dir="ltr"
+                value={phoneDraft}
+                onChange={(e) => setPhoneDraft(e.target.value)}
+                className={cn(FIELD, 'col-start-2 mt-0 text-end')}
+              />
             </div>
 
-            <div className="flex flex-row items-start gap-2 pb-1 pt-4 sm:gap-3" dir="rtl">
-              <span className={ICON_WRAP}>
-                <Building2 className="size-[1.125rem] text-muted-foreground" strokeWidth={2} />
+            <div
+              className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2 gap-y-1.5 pb-1 pt-4 sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:gap-x-3"
+              dir="rtl"
+            >
+              <span className={ICON_WRAP} aria-hidden>
+                <Building2 className="size-[1.125rem] shrink-0" strokeWidth={2} />
               </span>
-              <div className="min-w-0 flex-1 text-start" dir="rtl">
+              <div className="min-w-0 text-start leading-tight" dir="rtl">
                 <label htmlFor="profile-edit-apt" className={cn(LABEL, 'block text-start')}>
                   מספר דירה
                 </label>
-                <input
-                  id="profile-edit-apt"
-                  name="apartmentNumber"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  value={aptDraft}
-                  onChange={(e) => setAptDraft(e.target.value)}
-                  className={cn(FIELD, 'text-start')}
-                  dir="rtl"
-                />
               </div>
+              <input
+                id="profile-edit-apt"
+                name="apartmentNumber"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={aptDraft}
+                onChange={(e) => setAptDraft(e.target.value)}
+                className={cn(FIELD, 'col-start-2 mt-0 text-start')}
+                dir="rtl"
+              />
             </div>
           </>
         ) : (

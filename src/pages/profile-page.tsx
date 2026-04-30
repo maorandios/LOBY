@@ -1,20 +1,8 @@
-import {
-  Building2,
-  ChevronLeft,
-  CircleUserRound,
-  LogOut,
-  MoveRight,
-  ShieldUser,
-} from 'lucide-react'
+import { CircleUserRound, LogOut, MoveRight, ShieldUser } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/auth/use-auth'
 import { Button, buttonVariants } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-} from '@/components/ui/card'
-import { AdminBadgeCheck } from '@/components/admin/admin-badge-check'
 import { PushNotificationsPanel } from '@/components/profile/push-notifications-panel'
 import { ProfileUserSettingsCard } from '@/components/profile/profile-user-settings-card'
 import { POST_CREATE_BUTTON_HEX } from '@/components/feed/post-type-styles'
@@ -127,27 +115,6 @@ export function ProfilePage() {
           apartmentNumber={member?.apartment_number}
           onUpdated={() => refetch()}
         />
-
-        {isAdmin ? (
-          <Card className="mt-4 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
-            <CardContent className="flex flex-col gap-0 p-4 sm:p-6">
-              <Link
-                to="/building"
-                className={cn(
-                  buttonVariants({ variant: 'secondary' }),
-                  'h-11 w-full justify-between gap-2 rounded-xl ps-3 pe-3 font-semibold'
-                )}
-              >
-                <ChevronLeft className="size-4 shrink-0 opacity-70" aria-hidden />
-                <span className="flex flex-1 items-center justify-end gap-2">
-                  <AdminBadgeCheck />
-                  ניהול בניין
-                  <Building2 className="size-4 text-primary" aria-hidden />
-                </span>
-              </Link>
-            </CardContent>
-          </Card>
-        ) : null}
 
         <div className="mt-4">
           <PushNotificationsPanel />
