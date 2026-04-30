@@ -17,8 +17,9 @@ export function BuildingRequiredLayout() {
   if (hasBuilding) everHadBuildingRef.current = true
   const location = useLocation()
   const hideFeedChrome =
-    location.pathname.startsWith('/post/') &&
-    /^\/post\/[^/]+$/.test(location.pathname)
+    (location.pathname.startsWith('/post/') &&
+      /^\/post\/[^/]+$/.test(location.pathname)) ||
+    location.pathname === '/profile'
   const navType = useNavigationType()
   const prevPathKey = useRef<string | null>(null)
   const pathKey = `${location.pathname}${location.search}`
