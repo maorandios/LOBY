@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, MessageCirclePlus, Settings, ShieldUser } from 'lucide-react'
+import { Heart, MessageCircle, MessageCirclePlus, MessagesSquare, Settings, ShieldUser } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
@@ -20,13 +20,21 @@ import { StatusLabel, StatusMarker } from '@/components/feed/status-badge'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { insertComment } from '@/lib/feed-queries'
 import { cn } from '@/lib/utils'
-import { isPollPost, type FeedPost } from '@/types/feed'
+import { isPollPost, type FeedPost, type PostComment } from '@/types/feed'
+
+/** Inline reply field: one line visually; grows with content up to {@link INLINE_REPLY_FIELD_MAX_HEIGHT_PX}. */
+const INLINE_REPLY_FIELD_MAX_HEIGHT_PX = 192
 
 const commentFieldClass =
-  'flex min-h-[88px] w-full resize-y rounded-xl border-0 bg-background/40 px-3 py-2 text-base outline-none ring-offset-background placeholder:text-[0.8rem] placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55'
+  'box-border w-full resize-none overflow-x-hidden rounded-xl border-0 bg-background/40 px-3 py-2 text-[0.8rem] leading-normal text-foreground outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/55'
 
 const CHIP =
   'inline-flex max-w-full items-center gap-[0.21rem] rounded-full px-[0.425rem] py-[5px] text-[0.595rem] font-semibold tracking-tight'
+
+/** Feed preview: one plain line — collapse user newlines / runs of spaces. */
+function commentPreviewSingleLine(text: string): string {
+  return text.replace(/\r\n|\r|\n/g, ' ').replace(/\s+/g, ' ').trim()
+}
 
 type Props = {
   post: FeedPost
@@ -40,8 +48,8 @@ type Props = {
   onAdminSuccess?: () => void
   /** When set, after delete the parent runs this (e.g. navigate away). */
   onAdminDelete?: () => void
-  /** Feed: after inline «תגובה» composer succeeds, bump parent list count. */
-  onCommentPosted?: (postId: string) => void
+  /** Feed: after inline «תגובה» composer succeeds, merge count + preview. */
+  onCommentPosted?: (postId: string, comment: PostComment) => void
 }
 
 export function PostCard({
@@ -90,6 +98,18 @@ export function PostCard({
     }
   }, [replyOpen])
 
+  /** Autosize: start one line tall; expand until capped max height. */
+  useLayoutEffect(() => {
+    if (!replyOpen || isDetail) return
+    const el = replyTextareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    const next = Math.min(el.scrollHeight, INLINE_REPLY_FIELD_MAX_HEIGHT_PX)
+    el.style.height = `${next}px`
+    el.style.overflowY =
+      el.scrollHeight > INLINE_REPLY_FIELD_MAX_HEIGHT_PX ? 'auto' : 'hidden'
+  }, [replyBody, replyOpen, isDetail])
+
   async function handleInlineCommentSubmit() {
     if (!replyBody.trim() || replySending || isDetail) return
     setReplySending(true)
@@ -97,7 +117,7 @@ export function PostCard({
     try {
       const inserted = await insertComment(post.id, replyBody)
       if (inserted) {
-        onCommentPosted?.(post.id)
+        onCommentPosted?.(post.id, inserted)
         closeReplyComposer()
       } else {
         setReplyError('לא ניתן לפרסם את התגובה. נסו שוב.')
@@ -369,7 +389,7 @@ export function PostCard({
               ref={replyTextareaRef}
               id={`feed-inline-reply-field-${post.id}`}
               dir="rtl"
-              rows={3}
+              rows={1}
               className={commentFieldClass}
               placeholder="מה תרצו להגיב?"
               value={replyBody}
@@ -412,6 +432,59 @@ export function PostCard({
           </div>
         ) : null}
       </div>
+
+      {!isDetail && post.recentComments && post.recentComments.length > 0 ? (
+        <section
+          className="mt-6 border-t border-border/40 pt-5"
+          aria-labelledby={`recent-comments-heading-${post.id}`}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <h3
+            id={`recent-comments-heading-${post.id}`}
+            className="mb-3 flex flex-wrap items-center justify-start gap-x-1.5 gap-y-1 text-[0.7rem] font-medium text-muted-foreground"
+          >
+            <MessagesSquare
+              className="size-[1em] shrink-0 opacity-90"
+              strokeWidth={2}
+              aria-hidden
+            />
+            תגובות אחרונות
+          </h3>
+          <ul className="flex flex-col gap-4">
+            {post.recentComments.map((c) => (
+              <li key={c.id}>
+                <div className="flex flex-wrap items-baseline justify-start gap-x-1 text-start text-[0.72rem] leading-snug">
+                  {c.authorIsAdmin ? (
+                    <ShieldUser
+                      className="inline-block size-[0.744rem] shrink-0 translate-y-[0.05em]"
+                      style={{ color: POST_CREATE_BUTTON_HEX }}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                  ) : (
+                    <ResidentMetaUserIcon className="size-[0.744rem] translate-y-[0.05em]" />
+                  )}
+                  <span className="font-semibold text-foreground">{c.author}</span>
+                  <span aria-hidden className="text-muted-foreground/80">
+                    ·
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {c.relativeTime}
+                  </span>
+                </div>
+                <p
+                  className="mt-1 min-w-0 text-start text-[0.8rem] leading-normal text-foreground line-clamp-1"
+                  dir="rtl"
+                  title={commentPreviewSingleLine(c.text)}
+                >
+                  {commentPreviewSingleLine(c.text)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {isAdmin ? (
         <PostAdminSheet

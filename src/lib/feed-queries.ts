@@ -173,6 +173,75 @@ export async function fetchMemberMap(
 /** Page size for feed infinite scroll (initial + each “load more”). */
 export const FEED_POSTS_PAGE_SIZE = 20
 
+/** Max comments shown as a preview snippet on feed post cards */
+export const FEED_COMMENT_PREVIEW_LIMIT = 3
+
+type CommentPreviewRow = {
+  post_id: string
+  id: string
+  author_id: string
+  body: string
+  created_at: string
+}
+
+function mapPreviewRowToPostComment(
+  row: CommentPreviewRow,
+  memberMap: Map<string, MemberMapEntry>
+): PostComment {
+  const authorId = row.author_id
+  return {
+    id: row.id,
+    author: displayName(memberMap, authorId),
+    apartment: apartmentLabel(memberMap, authorId),
+    text: (row.body ?? '').trim(),
+    relativeTime: formatRelativeTimeHe(row.created_at),
+    authorIsAdmin: memberIsAdmin(memberMap, authorId),
+  }
+}
+
+/** Latest N comments per post for feed cards — `comments` SELECT + RLS (works without extra SQL). */
+async function fetchFeedCommentsPreview(
+  postIds: string[],
+  memberMap: Map<string, MemberMapEntry>
+): Promise<Map<string, PostComment[]>> {
+  const out = new Map<string, PostComment[]>()
+  if (postIds.length === 0) return out
+
+  const results = await Promise.all(
+    postIds.map(async (postId) => {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('id, author_id, body, created_at')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: false })
+        .limit(FEED_COMMENT_PREVIEW_LIMIT)
+      if (error) {
+        console.error('[LOBY] fetchFeedCommentsPreview', postId, error)
+        return [postId, [] as PostComment[]] as const
+      }
+      const rowsAsc = [...(data ?? [])].reverse()
+      const mapped = rowsAsc.map(
+        (row) =>
+          mapPreviewRowToPostComment(
+            {
+              post_id: postId,
+              id: row.id as string,
+              author_id: row.author_id as string,
+              body: (row.body as string) ?? '',
+              created_at: row.created_at as string,
+            },
+            memberMap
+          )
+      )
+      return [postId, mapped] as const
+    })
+  )
+  for (const [postId, list] of results) {
+    if (list.length) out.set(postId, list)
+  }
+  return out
+}
+
 export type FetchFeedPostsPageResult = {
   posts: FeedPost[]
   hasMore: boolean
@@ -252,7 +321,25 @@ export async function fetchFeedPostsForBuilding(
   const posts = rows.map((row) =>
     rowToFeedPost(row, memberMap, memberCount, myVotes.get(row.id) ?? null)
   )
-  return { posts, hasMore: rows.length === limit }
+  const postIdsNeedingComments = posts
+    .filter((p) => p.comments > 0)
+    .map((p) => p.id)
+
+  let pagePosts = posts
+  if (postIdsNeedingComments.length > 0) {
+    const previewMap = await fetchFeedCommentsPreview(
+      postIdsNeedingComments,
+      memberMap
+    )
+    pagePosts = posts.map((p) => {
+      const snippets = previewMap.get(p.id)
+      if (snippets?.length)
+        return { ...p, recentComments: snippets }
+      return p
+    })
+  }
+
+  return { posts: pagePosts, hasMore: rows.length === limit }
 }
 
 function rowToFeedPost(
@@ -278,7 +365,6 @@ function rowToFeedPost(
     authorIsAdmin: memberIsAdmin(memberMap, row.author_id),
     imageUrl: row.image_url?.trim() || undefined,
     comments: commentsCount,
-    recentComments: undefined as PostComment[] | undefined,
   }
 
   if (row.type === 'poll') {
@@ -622,15 +708,26 @@ export async function adminDeletePost(
   )
 }
 
-/** Bump comment count hint on feed posts after adding a comment (client-side). */
+/** Bump comment count (no preview mutation). */
 export function withCommentIncrement(post: FeedPost): FeedPost {
   return {
     ...post,
     comments: post.comments + 1,
-    recentComments:
-      post.recentComments && post.recentComments.length > 0
-        ? post.recentComments
-        : undefined,
+  }
+}
+
+/** Append new comment server row and retain last {@link FEED_COMMENT_PREVIEW_LIMIT} for cards. */
+export function mergeCommentIntoRecentPreview(
+  post: FeedPost,
+  inserted: PostComment
+): FeedPost {
+  const nextPreview = [...(post.recentComments ?? []), inserted].slice(
+    -FEED_COMMENT_PREVIEW_LIMIT
+  )
+  return {
+    ...post,
+    comments: post.comments + 1,
+    recentComments: nextPreview.length > 0 ? nextPreview : undefined,
   }
 }
 

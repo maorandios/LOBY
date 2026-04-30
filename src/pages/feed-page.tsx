@@ -21,6 +21,7 @@ import {
   fetchBuildingLabel,
   fetchFeedPostsForBuilding,
   insertPollVote,
+  mergeCommentIntoRecentPreview,
   mergePollVotes,
 } from '@/lib/feed-queries'
 import {
@@ -31,7 +32,7 @@ import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { useFeedSentinelLoadMore } from '@/hooks/use-feed-sentinel-load-more'
 import { cn } from '@/lib/utils'
-import type { FeedPost } from '@/types/feed'
+import type { FeedPost, PostComment } from '@/types/feed'
 
 type FeedLocationState = { newInviteCode?: string }
 
@@ -219,13 +220,16 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     []
   )
 
-  const bumpCommentCount = useCallback((postId: string) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === postId ? { ...p, comments: p.comments + 1 } : p
+  const afterInlineComment = useCallback(
+    (postId: string, comment: PostComment) => {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? mergeCommentIntoRecentPreview(p, comment) : p
+        )
       )
-    )
-  }, [])
+    },
+    []
+  )
 
   const showSentinelFooter =
     (filtered.length > 0 && hasMore) ||
@@ -412,7 +416,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
                         onPollVote={handlePollVote}
                         isAdmin={isAdmin}
                         onAdminSuccess={() => void loadFeed({ silent: true })}
-                        onCommentPosted={bumpCommentCount}
+                        onCommentPosted={afterInlineComment}
                       />
                     </li>
                   ))}
