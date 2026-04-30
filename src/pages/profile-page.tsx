@@ -30,7 +30,7 @@ const MAIN_SCROLL_BOTTOM =
 
 export function ProfilePage() {
   const { session, signOutApp } = useAuth()
-  const { isAdmin, member } = useBuildingMembership()
+  const { isAdmin, member, refetch } = useBuildingMembership()
   const navigate = useNavigate()
   const email = session?.user?.email ?? ''
 
@@ -125,6 +125,7 @@ export function ProfilePage() {
           email={email || undefined}
           phone={member?.phone}
           apartmentNumber={member?.apartment_number}
+          onUpdated={() => refetch()}
         />
 
         {isAdmin ? (
