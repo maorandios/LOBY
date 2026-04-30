@@ -11,6 +11,7 @@ import { useLocation } from 'react-router-dom'
 import { AdminBadgeCheck } from '@/components/admin/admin-badge-check'
 import { FeedSkeleton } from '@/components/feed/feed-skeleton'
 import { FeedHeader } from '@/components/feed/feed-header'
+import { PinnedPostNotice } from '@/components/feed/pinned-post-notice'
 import { PostCard } from '@/components/feed/post-card'
 import { Button } from '@/components/ui/button'
 import { useFeedRefresh } from '@/context/feed-refresh-context'
@@ -29,6 +30,7 @@ import {
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { useFeedSentinelLoadMore } from '@/hooks/use-feed-sentinel-load-more'
+import { cn } from '@/lib/utils'
 import type { FeedPost } from '@/types/feed'
 
 type FeedLocationState = { newInviteCode?: string }
@@ -257,6 +259,19 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     hasMore &&
     posts.length > 0
 
+  const hasInviteBanner = Boolean(inviteUrl && member?.role === 'admin')
+  const firstPostPinned = Boolean(filtered[0]?.pinned)
+  /** Symmetric band around pin notice: drop main top pad and use pt-5 = gap-5 to card. */
+  const pinNoticeEqualVertical =
+    !loadError &&
+    !membershipLoading &&
+    !loading &&
+    !noPostsInBuilding &&
+    !tabFilterEmptyLoaded &&
+    !(filtered.length === 0 && tabFilterStillSearching) &&
+    firstPostPinned &&
+    !hasInviteBanner
+
   return (
     <div
       dir="rtl"
@@ -293,9 +308,19 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
           ) : null}
         </div>
 
-        <main className="mx-auto w-full max-w-lg px-3 py-4">
+        <main
+          className={cn(
+            'mx-auto w-full max-w-lg px-3',
+            pinNoticeEqualVertical ? 'pb-4 pt-0' : 'py-4'
+          )}
+        >
           {inviteUrl && member?.role === 'admin' ? (
-            <div className="mb-4 rounded-xl border border-[#0369a1] bg-[#e0f2fe] px-3 py-3 text-right text-sm text-[#0c4a6e]">
+            <div
+              className={cn(
+                'rounded-xl border border-[#0369a1] bg-[#e0f2fe] px-3 py-3 text-right text-sm text-[#0c4a6e]',
+                firstPostPinned ? 'mb-5' : 'mb-4'
+              )}
+            >
               <p className="mb-2 flex items-center justify-end gap-2 font-semibold">
                 <AdminBadgeCheck className="size-4" />
                 קישור הזמנה לדיירים
@@ -357,8 +382,23 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
                 </div>
               ) : (
                 <ul className="flex flex-col gap-2">
-                  {filtered.map((post) => (
-                    <li key={post.id}>
+                  {filtered.map((post, postIndex) => (
+                    <li
+                      key={post.id}
+                      className={cn(
+                        post.pinned && 'flex flex-col gap-5',
+                        post.pinned &&
+                          postIndex === 0 &&
+                          (hasInviteBanner && firstPostPinned
+                            ? 'pt-0'
+                            : !hasInviteBanner
+                              ? 'pt-5'
+                              : '')
+                      )}
+                    >
+                      {post.pinned ? (
+                        <PinnedPostNotice />
+                      ) : null}
                       <PostCard
                         post={post}
                         onPollVote={handlePollVote}

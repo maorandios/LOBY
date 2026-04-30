@@ -5,6 +5,7 @@ import { Heart, MessageCircle, MoveLeft, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
 import { PollBlock } from '@/components/feed/poll-block'
+import { ResidentMetaUserIcon } from '@/components/feed/resident-meta-user-icon'
 import {
   cardAccentByType,
   pinnedPostCardGlowClass,
@@ -75,16 +76,6 @@ export function PostCard({
 
   const metaEnd = (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-      {pinned ? (
-        <span
-          className={cn(
-            CHIP,
-            'border border-primary/25 bg-primary/10 text-primary'
-          )}
-        >
-          נעוץ
-        </span>
-      ) : null}
       {typeChip}
       {isAdmin ? (
         <Button
@@ -106,6 +97,7 @@ export function PostCard({
 
   const residentMeta = (
     <>
+      {!post.authorIsAdmin ? <ResidentMetaUserIcon /> : null}
       <AuthorNameWithAdminBadge
         name={post.author}
         authorIsAdmin={post.authorIsAdmin}

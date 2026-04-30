@@ -3,7 +3,7 @@ import { BadgeCheck } from 'lucide-react'
 import { POST_CREATE_BUTTON_HEX } from '@/components/feed/post-type-styles'
 import { cn } from '@/lib/utils'
 
-/** Lucide `badge-check` (brand accent red) for admin-only labels. */
+/** Lucide `badge-check` (brand accent) for admin-only labels. */
 export function AdminBadgeCheck({ className }: { className?: string }) {
   return (
     <BadgeCheck

@@ -9,18 +9,18 @@ import {
 import type { PostTypeHe } from '@/types/feed'
 import { cn } from '@/lib/utils'
 
-/** Same red as the bottom-bar «פוסט חדש» FAB. */
-export const POST_CREATE_BUTTON_HEX = '#FF0048' as const
+/** Bottom-bar «פוסט חדש» FAB + active-tab dot indicator + admin mark tint. */
+export const POST_CREATE_BUTTON_HEX = '#5E00FF' as const
 
-/** Border stroke for pinned «נעוץ» posts. */
-export const PINNED_POST_BORDER_HEX = '#FFC5D2' as const
+/** Border stroke for pinned «נעוץ» posts (matches {@link POST_CREATE_BUTTON_HEX}). */
+export const PINNED_POST_BORDER_HEX = '#5E00FF' as const
 
 /** Subtle blurred drop shadow glow (hue matches {@link PINNED_POST_BORDER_HEX}). */
 export function pinnedPostCardGlowClass() {
   return cn(
-    'shadow-[0_10px_32px_-8px_rgba(255,197,210,0.45),0_4px_16px_-4px_rgba(255,197,210,0.28)]',
-    'hover:-translate-y-px hover:shadow-[0_14px_40px_-8px_rgba(255,197,210,0.55),0_6px_20px_-4px_rgba(255,197,210,0.38)]',
-    'dark:shadow-[0_10px_28px_-8px_rgba(255,197,210,0.22),0_4px_14px_-4px_rgba(255,197,210,0.14)] dark:hover:shadow-[0_14px_36px_-8px_rgba(255,197,210,0.28),0_6px_18px_-4px_rgba(255,197,210,0.22)]'
+    'shadow-[0_10px_32px_-8px_rgba(94,0,255,0.45),0_4px_16px_-4px_rgba(94,0,255,0.28)]',
+    'hover:-translate-y-px hover:shadow-[0_14px_40px_-8px_rgba(94,0,255,0.55),0_6px_20px_-4px_rgba(94,0,255,0.38)]',
+    'dark:shadow-[0_10px_28px_-8px_rgba(94,0,255,0.22),0_4px_14px_-4px_rgba(94,0,255,0.14)] dark:hover:shadow-[0_14px_36px_-8px_rgba(94,0,255,0.28),0_6px_18px_-4px_rgba(94,0,255,0.22)]'
   )
 }
 

@@ -3,7 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { MoveRight } from 'lucide-react'
 
 import { AuthorNameWithAdminBadge } from '@/components/feed/author-name-with-admin'
+import { PinnedPostNotice } from '@/components/feed/pinned-post-notice'
 import { PostDetailSkeleton } from '@/components/feed/post-detail-skeleton'
+import { ResidentMetaUserIcon } from '@/components/feed/resident-meta-user-icon'
 import { PostCard } from '@/components/feed/post-card'
 import { buttonVariants } from '@/components/ui/button'
 import {
@@ -124,21 +126,40 @@ export function PostDetailPage() {
       </div>
 
       <div className="-mt-px flex flex-col bg-feed-canvas">
-        <div className="mx-auto w-full max-w-lg px-3 py-4">
+        <div
+          className={cn(
+            'mx-auto w-full max-w-lg px-3',
+            !loading && post?.pinned ? 'pb-4 pt-0' : 'py-4'
+          )}
+        >
         {loading ? (
           <PostDetailSkeleton />
         ) : error ? (
           <p className="text-start text-sm text-destructive">{error}</p>
         ) : post ? (
           <div className="flex flex-col gap-8">
-            <PostCard
-              variant="detail"
-              post={post}
-              onPollVote={handlePollVote}
-              isAdmin={isAdmin}
-              onAdminSuccess={() => void reload()}
-              onAdminDelete={() => navigate('/feed', { replace: true })}
-            />
+            {post.pinned ? (
+              <div className="flex flex-col gap-5 pt-5">
+                <PinnedPostNotice />
+                <PostCard
+                  variant="detail"
+                  post={post}
+                  onPollVote={handlePollVote}
+                  isAdmin={isAdmin}
+                  onAdminSuccess={() => void reload()}
+                  onAdminDelete={() => navigate('/feed', { replace: true })}
+                />
+              </div>
+            ) : (
+              <PostCard
+                variant="detail"
+                post={post}
+                onPollVote={handlePollVote}
+                isAdmin={isAdmin}
+                onAdminSuccess={() => void reload()}
+                onAdminDelete={() => navigate('/feed', { replace: true })}
+              />
+            )}
 
             <section className="space-y-3 text-start" aria-labelledby="comments-heading">
               <h2
@@ -158,11 +179,14 @@ export function PostDetailPage() {
                       key={c.id}
                       className="rounded-2xl border border-border/60 bg-card/80 px-4 py-3 transition-[transform] duration-100 motion-reduce:transition-none active:scale-[0.993]"
                     >
-                      <p className="text-[0.8rem] text-muted-foreground">
+                      <p className="flex flex-wrap items-center gap-x-0.5 text-[0.8rem] text-muted-foreground">
+                        {!c.authorIsAdmin ? <ResidentMetaUserIcon /> : null}
                         <AuthorNameWithAdminBadge
                           name={c.author}
                           authorIsAdmin={c.authorIsAdmin}
                           nameClassName="text-[0.8rem]"
+                          adminClusterClassName="gap-0.5"
+                          badgeClassName="size-[0.93rem]"
                         />
                         <span aria-hidden> · </span>
                         דירה {c.apartment}
