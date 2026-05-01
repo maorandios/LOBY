@@ -159,6 +159,65 @@ function PostImagePicker({
   )
 }
 
+type AnonymousPublishBarProps = {
+  publishLabel: string
+  submitting: boolean
+  anonymous: boolean
+  onAnonymousChange: (next: boolean) => void
+  onPublish: () => void
+}
+
+function AnonymousPublishBar({
+  publishLabel,
+  submitting,
+  anonymous,
+  onAnonymousChange,
+  onPublish,
+}: AnonymousPublishBarProps) {
+  return (
+    <div
+      dir="rtl"
+      className="flex w-full items-center gap-3"
+    >
+      <Button
+        type="button"
+        className="h-11 min-w-0 flex-1 rounded-full border-0 bg-zinc-800 font-semibold text-white shadow-none hover:bg-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+        disabled={submitting}
+        onClick={onPublish}
+      >
+        {submitting ? 'שולח…' : publishLabel}
+      </Button>
+      <div className="flex shrink-0 items-center gap-2">
+        <span className="max-w-[5.5rem] text-end text-xs font-semibold leading-tight text-foreground">
+          פרסום אנונימי
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={anonymous}
+          aria-label="פרסום אנונימי"
+          disabled={submitting}
+          onClick={() => onAnonymousChange(!anonymous)}
+          className={cn(
+            'flex h-7 w-12 shrink-0 items-center rounded-full p-0.5 transition-colors',
+            anonymous
+              ? 'bg-[#5E00FF]'
+              : 'bg-zinc-300 dark:bg-zinc-600'
+          )}
+        >
+          <span
+            className={cn(
+              'size-6 shrink-0 rounded-full bg-white shadow transition-[margin] duration-200 ease-out',
+              anonymous ? 'ms-auto' : 'me-auto'
+            )}
+            aria-hidden
+          />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function CreatePostSheet({ open, onOpenChange }: Props) {
   const navigate = useNavigate()
   const { member } = useBuildingMembership()
@@ -167,6 +226,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
 
   const [mode, setMode] = useState<Mode>('menu')
   const [submitting, setSubmitting] = useState(false)
+  const [anonymousPublish, setAnonymousPublish] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [title, setTitle] = useState('')
@@ -206,6 +266,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
     setPollOptions(['', ''])
     clearImage()
     setError(null)
+    setAnonymousPublish(false)
     setMode('menu')
   }
 
@@ -383,6 +444,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           title: t,
           options: opts,
           imageUrl,
+          isAnonymous: anonymousPublish,
         })
       } else if (kind === 'report') {
         res = await createPost({
@@ -390,6 +452,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           kind: 'report',
           title: t,
           imageUrl,
+          isAnonymous: anonymousPublish,
         })
       } else if (kind === 'update') {
         res = await createPost({
@@ -397,6 +460,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           kind: 'update',
           title: t,
           imageUrl,
+          isAnonymous: anonymousPublish,
         })
       } else {
         res = await createPost({
@@ -404,6 +468,7 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
           kind: 'request',
           title: t,
           imageUrl,
+          isAnonymous: anonymousPublish,
         })
       }
 
@@ -605,14 +670,13 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
             {error}
           </p>
         ) : null}
-        <Button
-          type="button"
-          className="h-11 w-full rounded-full font-semibold"
-          disabled={submitting}
-          onClick={() => void submit('report')}
-        >
-          {submitting ? 'שולח…' : 'פרסום דיווח'}
-        </Button>
+        <AnonymousPublishBar
+          publishLabel="פרסום דיווח"
+          submitting={submitting}
+          anonymous={anonymousPublish}
+          onAnonymousChange={setAnonymousPublish}
+          onPublish={() => void submit('report')}
+        />
       </div>
     </>
   )
@@ -643,14 +707,13 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
             {error}
           </p>
         ) : null}
-        <Button
-          type="button"
-          className="h-11 w-full rounded-full font-semibold"
-          disabled={submitting}
-          onClick={() => void submit('update')}
-        >
-          {submitting ? 'שולח…' : 'פרסום עדכון'}
-        </Button>
+        <AnonymousPublishBar
+          publishLabel="פרסום עדכון"
+          submitting={submitting}
+          anonymous={anonymousPublish}
+          onAnonymousChange={setAnonymousPublish}
+          onPublish={() => void submit('update')}
+        />
       </div>
     </>
   )
@@ -681,14 +744,13 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
             {error}
           </p>
         ) : null}
-        <Button
-          type="button"
-          className="h-11 w-full rounded-full font-semibold"
-          disabled={submitting}
-          onClick={() => void submit('request')}
-        >
-          {submitting ? 'שולח…' : 'פרסום בקשה'}
-        </Button>
+        <AnonymousPublishBar
+          publishLabel="פרסום בקשה"
+          submitting={submitting}
+          anonymous={anonymousPublish}
+          onAnonymousChange={setAnonymousPublish}
+          onPublish={() => void submit('request')}
+        />
       </div>
     </>
   )
@@ -746,14 +808,13 @@ export function CreatePostSheet({ open, onOpenChange }: Props) {
             {error}
           </p>
         ) : null}
-        <Button
-          type="button"
-          className="h-11 w-full rounded-full font-semibold"
-          disabled={submitting}
-          onClick={() => void submit('poll')}
-        >
-          {submitting ? 'שולח…' : 'פרסום סקר'}
-        </Button>
+        <AnonymousPublishBar
+          publishLabel="פרסום סקר"
+          submitting={submitting}
+          anonymous={anonymousPublish}
+          onAnonymousChange={setAnonymousPublish}
+          onPublish={() => void submit('poll')}
+        />
       </div>
     </>
   )

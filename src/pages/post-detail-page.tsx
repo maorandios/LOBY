@@ -113,7 +113,9 @@ export function PostDetailPage() {
   const showComposerBar = Boolean(post && !loading && !error)
   const viewerId = session?.user?.id
   const showAuthorDeleteTrash =
-    Boolean(post && viewerId && post.authorId === viewerId)
+    Boolean(
+      post && viewerId && post.authorId && post.authorId === viewerId
+    )
 
   return (
     <div dir="rtl" className="min-h-svh bg-feed-canvas">

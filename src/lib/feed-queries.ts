@@ -11,7 +11,8 @@ import type { FeedFilterId } from '@/types/feed'
 export type PostRow = {
   id: string
   building_id: string
-  author_id: string
+  author_id: string | null
+  is_anonymous?: boolean
   type: PostTypeDb
   status: PostStatusDb
   title: string
@@ -274,6 +275,7 @@ export async function fetchFeedPostsForBuilding(
         id,
         building_id,
         author_id,
+        is_anonymous,
         type,
         status,
         title,
@@ -365,6 +367,43 @@ function rowToFeedPost(
 ): FeedPost {
   const commentsCount = countFromRel(row.comments as CountAgg)
   const rel = formatRelativeTimeHe(row.created_at)
+  const isAnonymous = Boolean(row.is_anonymous)
+
+  if (isAnonymous) {
+    const base = {
+      id: row.id,
+      type: postTypeDbToHe(row.type),
+      status: postStatusDbToHe(row.status),
+      pinned: Boolean((row as { pinned?: boolean }).pinned),
+      relativeTime: rel,
+      title: row.title,
+      authorId: null as string | null,
+      isAnonymous: true as const,
+      authorWhatsAppDigits: undefined,
+      author: 'פרסום אנונימי',
+      apartment: '',
+      authorIsAdmin: false,
+      imageUrl: row.image_url?.trim() || undefined,
+      comments: commentsCount,
+    }
+
+    if (row.type === 'poll') {
+      const poll = buildPollData(
+        row,
+        row.poll_options,
+        memberCount,
+        myVoteOptionId
+      )
+      return { ...base, type: 'הצבעה', poll }
+    }
+
+    return {
+      ...base,
+      type: postTypeDbToHe(row.type) as Exclude<(typeof base)['type'], 'הצבעה'>,
+    }
+  }
+
+  const authorKey = row.author_id as string
   const base = {
     id: row.id,
     type: postTypeDbToHe(row.type),
@@ -373,10 +412,11 @@ function rowToFeedPost(
     relativeTime: rel,
     title: row.title,
     authorId: row.author_id,
-    authorWhatsAppDigits: memberWhatsAppDigits(memberMap, row.author_id),
-    author: displayName(memberMap, row.author_id),
-    apartment: apartmentLabel(memberMap, row.author_id),
-    authorIsAdmin: memberIsAdmin(memberMap, row.author_id),
+    isAnonymous: false as const,
+    authorWhatsAppDigits: memberWhatsAppDigits(memberMap, authorKey),
+    author: displayName(memberMap, authorKey),
+    apartment: apartmentLabel(memberMap, authorKey),
+    authorIsAdmin: memberIsAdmin(memberMap, authorKey),
     imageUrl: row.image_url?.trim() || undefined,
     comments: commentsCount,
   }
@@ -405,6 +445,7 @@ export async function fetchPostById(postId: string): Promise<FeedPost | null> {
       id,
       building_id,
       author_id,
+      is_anonymous,
       type,
       status,
       title,
@@ -575,6 +616,8 @@ export async function insertPollVote(
 
 export type CreatePostPayload = {
   buildingId: string
+  /** When true, author_id is not stored — identity is not recoverable. */
+  isAnonymous?: boolean
   /** Set after uploading to Storage, or omit. */
   imageUrl?: string | null
 } & (
@@ -602,21 +645,39 @@ export async function createPost(payload: CreatePostPayload): Promise<{
   } = await supabase.auth.getUser()
   if (!user?.id) return { id: null, error: 'נדרשת התחברות' }
 
-  const common = {
-    building_id: payload.buildingId,
-    author_id: user.id,
-  }
-
+  const wantsAnon = Boolean(payload.isAnonymous)
   const resolvedImageUrl = payload.imageUrl?.trim() || null
 
   if (payload.kind === 'poll') {
     const opts = payload.options.map((t) => t.trim()).filter(Boolean)
     if (opts.length < 2) return { id: null, error: 'נדרשות לפחות שתי אפשרויות' }
 
+    if (wantsAnon) {
+      const { data: rpcId, error: rpcErr } = await supabase.rpc(
+        'create_poll_post',
+        {
+          p_building_id: payload.buildingId,
+          p_title: payload.title.trim(),
+          p_image_url: resolvedImageUrl ?? '',
+          p_is_anonymous: true,
+          p_option_labels: opts,
+        }
+      )
+      if (rpcErr) {
+        console.error('[LOBY] createPost anonymous poll', rpcErr)
+        return { id: null, error: rpcErr.message ?? 'יצירת סקר נכשלה' }
+      }
+      const id = rpcId != null && rpcId !== '' ? String(rpcId) : null
+      if (!id) return { id: null, error: 'יצירת סקר נכשלה' }
+      return { id }
+    }
+
     const { data: inserted, error: pErr } = await supabase
       .from('posts')
       .insert({
-        ...common,
+        building_id: payload.buildingId,
+        author_id: user.id,
+        is_anonymous: false,
         type: 'poll' satisfies PostTypeDb,
         status: 'open' satisfies PostStatusDb,
         title: payload.title.trim(),
@@ -647,10 +708,36 @@ export async function createPost(payload: CreatePostPayload): Promise<{
     return { id: postId }
   }
 
+  if (wantsAnon) {
+    const { data: ins, error } = await supabase
+      .from('posts')
+      .insert({
+        building_id: payload.buildingId,
+        author_id: null,
+        is_anonymous: true,
+        type: payload.kind satisfies PostTypeDb,
+        status: 'open' satisfies PostStatusDb,
+        title: payload.title.trim(),
+        image_url: resolvedImageUrl,
+        poll_closed: false,
+        poll_cancelled: false,
+      })
+      .select('id')
+      .single()
+
+    if (error || !ins) {
+      console.error('[LOBY] createPost anonymous', error)
+      return { id: null, error: error?.message ?? 'יצירת פוסט נכשלה' }
+    }
+    return { id: ins.id as string }
+  }
+
   const { data: ins, error } = await supabase
     .from('posts')
     .insert({
-      ...common,
+      building_id: payload.buildingId,
+      author_id: user.id,
+      is_anonymous: false,
       type: payload.kind satisfies PostTypeDb,
       status: 'open' satisfies PostStatusDb,
       title: payload.title.trim(),

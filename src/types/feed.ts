@@ -41,8 +41,10 @@ export interface FeedPostBase {
   /** Preformatted relative time for mock display */
   relativeTime: string
   title: string
-  /** auth.users id — for client checks (e.g. author delete) */
-  authorId: string
+  /** auth.users id — for client checks (e.g. author delete); null for anonymous posts */
+  authorId: string | null
+  /** When set, displayed as פרסום אנונימי — no stored author identity */
+  isAnonymous?: boolean
   /** Digits only for `wa.me` when author has a normalizable phone on file */
   authorWhatsAppDigits?: string
   author: string

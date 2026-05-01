@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   ChartSpline,
   CircleCheck,
+  CreditCard,
   ShieldCog,
   TableProperties,
   UserRoundPlus,
@@ -21,13 +22,13 @@ const POLL_CHIP_SURFACE =
   'inline-flex max-w-full items-center rounded-full px-[0.425rem] py-[5px] text-[0.595rem] font-semibold tracking-tight'
 
 export function BuildingAdminHubPage() {
-  const [statsDevToastOpen, setStatsDevToastOpen] = useState(false)
+  const [inDevToastOpen, setInDevToastOpen] = useState(false)
 
   useEffect(() => {
-    if (!statsDevToastOpen) return
-    const id = window.setTimeout(() => setStatsDevToastOpen(false), 2600)
+    if (!inDevToastOpen) return
+    const id = window.setTimeout(() => setInDevToastOpen(false), 2600)
     return () => window.clearTimeout(id)
-  }, [statsDevToastOpen])
+  }, [inDevToastOpen])
 
   return (
     <div className={BUILDING_ADMIN_SHELL} dir="rtl">
@@ -55,14 +56,23 @@ export function BuildingAdminHubPage() {
           icon={ChartSpline}
           title="סטטיסטיקות"
           subtitle="תצוגת מנהלים של פעילות הבניין"
-          onClick={() => setStatsDevToastOpen(true)}
+          onClick={() => setInDevToastOpen(true)}
+          trailingChip={
+            <span className={cn(POLL_CHIP_SURFACE, typeBadgeClass('הצבעה'))}>בפיתוח</span>
+          }
+        />
+        <AdminMenuActionRow
+          icon={CreditCard}
+          title="ניהול מנוי"
+          subtitle="רכשו מנוי שנתי או בטלו את המנוי הקיים"
+          onClick={() => setInDevToastOpen(true)}
           trailingChip={
             <span className={cn(POLL_CHIP_SURFACE, typeBadgeClass('הצבעה'))}>בפיתוח</span>
           }
         />
       </div>
 
-      {statsDevToastOpen ? (
+      {inDevToastOpen ? (
         <div
           className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
           role="status"

@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Clipboard, Loader2 } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 
 import { AdminBadgeCheck } from '@/components/admin/admin-badge-check'
@@ -191,7 +191,9 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
 
   const filtered = useMemo(() => {
     if (!myPostsOnly || !currentUserId) return tabFiltered
-    return tabFiltered.filter((p) => p.authorId === currentUserId)
+    return tabFiltered.filter(
+      (p) => p.authorId != null && p.authorId === currentUserId
+    )
   }, [tabFiltered, myPostsOnly, currentUserId])
 
   const needMoreForDisplay = useMemo(() => {
@@ -400,14 +402,27 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
           ) : membershipLoading || loading ? (
             <FeedSkeleton count={4} />
           ) : noPostsInBuilding ? (
-            <div className="flex min-h-[45vh] flex-col items-center justify-center gap-2 px-4 text-center">
-              <p className="text-base font-medium text-foreground">
-                אין פריטים להצגה
-              </p>
-              <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-                {emptyHint(mode, false)}
-              </p>
-            </div>
+            mode === 'all' ? (
+              <div className="flex min-h-[45vh] flex-col items-center justify-center gap-3 px-4 text-center">
+                <Clipboard
+                  className="size-12 shrink-0 text-muted-foreground"
+                  strokeWidth={1.75}
+                  aria-hidden
+                />
+                <p className="text-base font-medium text-foreground">
+                  אין פוסטים להציג כרגע
+                </p>
+              </div>
+            ) : (
+              <div className="flex min-h-[45vh] flex-col items-center justify-center gap-2 px-4 text-center">
+                <p className="text-base font-medium text-foreground">
+                  אין פריטים להצגה
+                </p>
+                <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  {emptyHint(mode, false)}
+                </p>
+              </div>
+            )
           ) : tabFilterEmptyLoaded ? (
             <div className="flex min-h-[45vh] flex-col items-center justify-center gap-2 px-4 text-center">
               <p className="text-base font-medium text-foreground">

@@ -23,7 +23,7 @@ type Json = Record<string, unknown>;
 interface PostRow {
   id: string;
   building_id: string;
-  author_id: string;
+  author_id: string | null;
   type: string;
   status: string;
   title: string;
@@ -191,7 +191,7 @@ Deno.serve(async (req: Request) => {
 
       const userIds = (members ?? [])
         .map((m: { user_id: string }) => m.user_id)
-        .filter((uid: string) => uid !== authorId);
+        .filter((uid: string) => authorId == null || uid !== authorId);
 
       if (prow.type === "poll") {
         await sendToUsers(
@@ -233,20 +233,22 @@ Deno.serve(async (req: Request) => {
       ).eq("id", comment.post_id as string).maybeSingle();
       if (pErr || !post) throw pErr ?? new Error("post");
 
-      const postAuthor = post.author_id as string;
+      const postAuthor = post.author_id as string | null;
       const commentAuthor = comment.author_id as string;
 
-      if (postAuthor === commentAuthor) {
+      if (postAuthor && postAuthor === commentAuthor) {
         return new Response(JSON.stringify({ ok: true, skipped: true }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      await sendToUsers(sb, [postAuthor], post.building_id as string, "תגובה חדשה לפוסט שלך", "פתחו לצפייה בהודעות", {
-        url: postUrl(comment.post_id as string, appOrigin),
-        postId: comment.post_id as string,
-      });
+      if (postAuthor) {
+        await sendToUsers(sb, [postAuthor], post.building_id as string, "תגובה חדשה לפוסט שלך", "פתחו לצפייה בהודעות", {
+          url: postUrl(comment.post_id as string, appOrigin),
+          postId: comment.post_id as string,
+        });
+      }
 
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
@@ -264,8 +266,12 @@ Deno.serve(async (req: Request) => {
       const prevPinned = Boolean(oldRow.pinned);
       const nextPinned = Boolean(newRow.pinned);
 
-      // Report status change → notify report author only
-      if (newRow.type === "report" && oldRow.status !== newRow.status) {
+      // Report status change → notify report author only (no author for anonymous posts)
+      if (
+        newRow.type === "report" &&
+        oldRow.status !== newRow.status &&
+        newRow.author_id
+      ) {
         await sendToUsers(
           sb,
           [newRow.author_id],

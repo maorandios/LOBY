@@ -4,12 +4,25 @@ import { CircleCheck, Copy, MessageCircleCheck, UserRoundPlus } from 'lucide-rea
 import { AdminMenuActionRow } from '@/components/admin/admin-menu-choice-row'
 import { BuildingAdminSectionHeader } from '@/components/admin/building-admin-section-header'
 import { BuildingAdminPageLoader } from '@/components/ui/full-screen-loading'
-import { useBuildingAdminData } from '@/hooks/use-building-admin-data'
+import {
+  type BuildingAdminBuildingRow,
+  useBuildingAdminData,
+} from '@/hooks/use-building-admin-data'
 
 import { BUILDING_ADMIN_SHELL } from './building-admin-layout'
 
-const WA_INTRO =
-  'הצטרפו לאפליקציית הבניין שלנו דרך הקישור הבא:'
+function formatBuildingAddressForShare(
+  b: BuildingAdminBuildingRow | null,
+): string {
+  if (!b) return ''
+  const full = b.full_address?.trim()
+  if (full) return full
+  const street = b.street_name?.trim() ?? ''
+  const num = b.building_number?.trim() ?? ''
+  const city = b.city?.trim() ?? ''
+  const streetLine = [street, num].filter(Boolean).join(' ')
+  return [streetLine, city].filter(Boolean).join(', ')
+}
 
 const INTRO_COPY =
   'הזמינו דיירים להצטרף, שלחו להם את הקישור באמצעות העתקה או שליחה ישירה דרך הוואטצאפ'
@@ -23,8 +36,21 @@ const SHARE_SUBTITLE = 'לחצו כדי לשתף את הלינק בוואטצא�
 
 const SHARE_TITLE = 'שיתוף בוואטצאפ'
 
+function buildWhatsAppInviteText(
+  inviteUrl: string,
+  building: BuildingAdminBuildingRow | null,
+): string {
+  const address = formatBuildingAddressForShare(building)
+  return [
+    'היי,',
+    'מצורף לינק התחברות לאפליקציית הבלוק - תקשורת בין דיירים שעובדת!',
+    `כתובת הבניין היא ${address || '—'}`,
+    `מחכים לכם שם - ${inviteUrl}`,
+  ].join('\n')
+}
+
 export function BuildingInviteResidentsPage() {
-  const { inviteCode, loading, loadError } = useBuildingAdminData()
+  const { inviteCode, building, loading, loadError } = useBuildingAdminData()
   const [copyToastOpen, setCopyToastOpen] = useState(false)
 
   const inviteUrl = useMemo(() => {
@@ -52,7 +78,7 @@ export function BuildingInviteResidentsPage() {
 
   function shareWhatsApp() {
     if (!inviteUrl) return
-    const text = `${WA_INTRO}\n${inviteUrl}`
+    const text = buildWhatsAppInviteText(inviteUrl, building)
     const href = `https://wa.me/?text=${encodeURIComponent(text)}`
     window.open(href, '_blank', 'noopener,noreferrer')
   }

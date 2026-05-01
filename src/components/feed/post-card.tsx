@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart, MessageCircle, MessageCircleCheck, MessageCirclePlus, MessagesSquare, Settings, ShieldUser } from 'lucide-react'
+import { Heart, HatGlasses, MessageCircle, MessageCircleCheck, MessageCirclePlus, MessagesSquare, Settings, ShieldUser } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
@@ -170,7 +170,22 @@ export function PostCard({
     </div>
   )
 
-  const residentMeta = (
+  const residentMeta = post.isAnonymous ? (
+    <>
+      <HatGlasses
+        className="inline-block size-[0.93rem] shrink-0 text-muted-foreground"
+        strokeWidth={2}
+        aria-hidden
+      />
+      <span className="font-semibold text-foreground">{post.author}</span>
+      <span aria-hidden className="text-muted-foreground/80">
+        ·
+      </span>
+      <span className="tabular-nums text-muted-foreground">
+        {post.relativeTime}
+      </span>
+    </>
+  ) : (
     <>
       {!post.authorIsAdmin ? <ResidentMetaUserIcon /> : null}
       <AuthorNameWithAdminBadge
@@ -311,7 +326,7 @@ export function PostCard({
                       />
                       תגובה
                     </Button>
-                    {post.authorWhatsAppDigits ? (
+                    {post.authorWhatsAppDigits && !post.isAnonymous ? (
                       <a
                         href={`https://wa.me/${post.authorWhatsAppDigits}`}
                         target="_blank"
@@ -363,7 +378,7 @@ export function PostCard({
                     />
                     תגובה
                   </Button>
-                  {post.authorWhatsAppDigits ? (
+                  {post.authorWhatsAppDigits && !post.isAnonymous ? (
                     <a
                       href={`https://wa.me/${post.authorWhatsAppDigits}`}
                       target="_blank"

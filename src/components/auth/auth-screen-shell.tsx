@@ -22,10 +22,10 @@ export function AuthScreenShell({ children, bottomFullWidth }: AuthScreenShellPr
 
   return (
     <div
-      className="min-h-svh bg-feed-canvas px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+      className="flex min-h-svh flex-col bg-feed-canvas px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       dir="rtl"
     >
-      <div className="mx-auto flex w-full max-w-md flex-col gap-8">{children}</div>
+      <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col gap-8">{children}</div>
     </div>
   )
 }
