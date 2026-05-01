@@ -242,14 +242,22 @@ export function PostCard({
 
       <div className="mt-7 flex flex-col gap-5">
         {isReport || isPoll ? (
-          <div className="flex min-w-0 flex-wrap items-center gap-x-[5px] gap-y-2">
-            <StatusLabel status={post.status} />
-            <StatusMarker status={post.status} />
-            <div className="min-w-0 flex-1 basis-0">
-              <h2 className="text-start text-[1.06rem] leading-snug font-medium tracking-tight text-foreground">
-                {post.title}
-              </h2>
+          /**
+           * RTL flex: badge at inline-start (right); title in flex-1 so wrapped lines stay in the
+           * text column (hanging indent). items-start + slight padding-top aligns chip with first
+           * line cap height vs float, which sat above the text / could sit on its own line.
+           */
+          <div
+            dir="rtl"
+            className="flex min-w-0 flex-nowrap items-start gap-x-[5px]"
+          >
+            <div className="flex shrink-0 items-center gap-x-[5px] pt-[3px]">
+              <StatusLabel status={post.status} />
+              <StatusMarker status={post.status} />
             </div>
+            <h2 className="min-w-0 flex-1 basis-0 text-start text-[1.06rem] leading-snug font-medium tracking-tight text-foreground">
+              {post.title}
+            </h2>
           </div>
         ) : (
           <div>
