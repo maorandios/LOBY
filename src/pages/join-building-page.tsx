@@ -9,6 +9,7 @@ import { useBuildingMembership } from '@/hooks/use-building-membership'
 import type { InviteBuildingRow } from '@/types/building'
 import { cn } from '@/lib/utils'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
+import { tryEnablePushNotificationsAfterJoin } from '@/lib/web-push'
 
 const TOTAL_FORM_STEPS = 3
 const REVIEW_STEP = 4
@@ -286,6 +287,7 @@ function JoinBuildingPageInner({ code }: { code: string }) {
       }
 
       await refetch()
+      await tryEnablePushNotificationsAfterJoin(building.building_id)
       navigate('/feed', { replace: true })
     } finally {
       setSubmitting(false)

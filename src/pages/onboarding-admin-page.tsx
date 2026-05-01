@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 import { generateInviteCode } from '@/lib/invite-code'
 import { OnboardingLoadingPage } from '@/pages/onboarding-loading-page'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
+import { tryEnablePushNotificationsAfterJoin } from '@/lib/web-push'
 
 const TOTAL_FORM_STEPS = 6
 const REVIEW_STEP = 7
@@ -313,6 +314,7 @@ export function OnboardingAdminPage() {
       }
 
       await refetch()
+      await tryEnablePushNotificationsAfterJoin(building.id as string)
       navigate('/feed', { replace: true, state: { newInviteCode: code } })
     } finally {
       setSubmitting(false)

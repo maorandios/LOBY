@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -300,6 +300,37 @@ export async function subscribeAndSave(
   }
 
   return { ok: true }
+}
+
+/**
+ * Default-on push: call from join-building / admin-onboarding success handlers so
+ * {@link Notification.requestPermission} stays in the user-gesture chain (mobile Safari).
+ */
+export async function tryEnablePushNotificationsAfterJoin(
+  buildingId: string
+): Promise<void> {
+  if (typeof window === 'undefined') return
+  if (!isSupabaseConfigured()) return
+  if (!isWebPushSupported()) return
+  if (!getVapidPublicKey()) return
+
+  try {
+    let perm = Notification.permission
+    if (perm === 'denied') return
+    if (perm === 'default') {
+      perm = await Notification.requestPermission()
+    }
+    if (perm !== 'granted') return
+
+    const res = await subscribeAndSave(buildingId, {
+      permissionAlreadyGranted: true,
+    })
+    if (!res.ok) {
+      console.warn('[LOBY] tryEnablePushNotificationsAfterJoin', res.message)
+    }
+  } catch (e) {
+    console.warn('[LOBY] tryEnablePushNotificationsAfterJoin', e)
+  }
 }
 
 export async function unsubscribeAndRemove(): Promise<{ ok: boolean; message?: string }> {
