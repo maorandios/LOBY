@@ -78,6 +78,61 @@ export async function ensureServiceWorker(): Promise<ServiceWorkerRegistration |
   }
 }
 
+async function hasPushRowForBuilding(
+  userId: string,
+  buildingId: string
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('building_id', buildingId)
+    .limit(1)
+
+  if (error) {
+    console.error('[LOBY] push_subscriptions', error)
+    return false
+  }
+  if (data?.length) return true
+
+  // Same tab may have an active PushSubscription before the building-scoped row is visible (timing / client cache).
+  if (
+    typeof navigator !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    permissionLooksGranted()
+  ) {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration()
+      const sub = await reg?.pushManager?.getSubscription()
+      const endpoint = sub?.endpoint
+      if (!endpoint) return false
+      const { data: row, error: epErr } = await supabase
+        .from('push_subscriptions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('building_id', buildingId)
+        .eq('endpoint', endpoint)
+        .maybeSingle()
+      if (epErr) {
+        console.error('[LOBY] push_subscriptions by endpoint', epErr)
+        return false
+      }
+      return Boolean(row?.id)
+    } catch (e) {
+      console.error('[LOBY] push local subscription check', e)
+    }
+  }
+  return false
+}
+
+function permissionLooksGranted(): boolean {
+  try {
+    return typeof Notification !== 'undefined' && Notification.permission === 'granted'
+  } catch {
+    return false
+  }
+}
+
 export async function loadPushSubscriptionState(
   buildingId: string | null
 ): Promise<{
@@ -91,17 +146,12 @@ export async function loadPushSubscriptionState(
   if (!user?.id || !buildingId) {
     return { permission, hasDbRow: false }
   }
-  const { data, error } = await supabase
-    .from('push_subscriptions')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('building_id', buildingId)
-    .limit(1)
-  if (error) {
-    console.error('[LOBY] push_subscriptions', error)
-    return { permission, hasDbRow: false }
+  let hasDbRow = await hasPushRowForBuilding(user.id, buildingId)
+  if (!hasDbRow && permission === 'granted') {
+    await new Promise((r) => setTimeout(r, 200))
+    hasDbRow = await hasPushRowForBuilding(user.id, buildingId)
   }
-  return { permission, hasDbRow: Boolean(data?.length) }
+  return { permission, hasDbRow }
 }
 
 export async function subscribeAndSave(
@@ -137,28 +187,65 @@ export async function subscribeAndSave(
     return { ok: false, message: 'לא ניתן לרשום service worker' }
   }
 
+  // Subscribe requires an active worker; on mobile first install can lag behind register().
+  try {
+    await registration.ready
+  } catch (e) {
+    console.error('[LOBY] service worker ready', e)
+    return { ok: false, message: 'לא ניתן להפעיל את ה-service worker' }
+  }
+
   const keyMaterial = urlBase64ToUint8Array(vapid)
-  const sub = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: keyMaterial as unknown as BufferSource,
-  })
+  let sub: PushSubscription
+  try {
+    sub = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: keyMaterial as unknown as BufferSource,
+    })
+  } catch (e) {
+    console.error('[LOBY] pushManager.subscribe', e)
+    const msg =
+      e instanceof Error ? e.message : 'הדפדפן לא הצליח ליצור מנוי פוש'
+    return { ok: false, message: msg }
+  }
 
   const json = sub.toJSON() as Record<string, unknown>
 
-  const { error } = await supabase.from('push_subscriptions').upsert(
-    {
-      user_id: user.id,
-      building_id: buildingId,
-      endpoint: sub.endpoint,
-      subscription_json: json,
-      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
-    },
-    { onConflict: 'endpoint' }
-  )
+  const { data: upsertRow, error } = await supabase
+    .from('push_subscriptions')
+    .upsert(
+      {
+        user_id: user.id,
+        building_id: buildingId,
+        endpoint: sub.endpoint,
+        subscription_json: json,
+        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+      },
+      { onConflict: 'endpoint' }
+    )
+    .select('id')
+    .maybeSingle()
 
   if (error) {
     console.error('[LOBY] push_subscriptions upsert', error)
     return { ok: false, message: error.message }
+  }
+
+  if (!upsertRow?.id) {
+    const { data: verify, error: verifyErr } = await supabase
+      .from('push_subscriptions')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('building_id', buildingId)
+      .eq('endpoint', sub.endpoint)
+      .maybeSingle()
+    if (verifyErr) {
+      console.error('[LOBY] push_subscriptions verify', verifyErr)
+      return { ok: false, message: verifyErr.message }
+    }
+    if (!verify?.id) {
+      return { ok: false, message: 'לא ניתן לאמת את שמירת המנוי. נסו שוב.' }
+    }
   }
 
   return { ok: true }

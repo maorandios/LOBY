@@ -169,7 +169,14 @@ export function PushNotificationsPanel() {
         setNote(res.message ?? 'לא ניתן להפעיל התראות')
         return
       }
+      // Show ON immediately; refresh() syncs with DB (avoids brief mismatch after save on slow networks).
+      setUi('active')
       await refresh()
+    } catch (e) {
+      console.error('[LOBY] handleEnable push', e)
+      setNote(
+        e instanceof Error ? e.message : 'לא ניתן להפעיל התראות'
+      )
     } finally {
       setBusy(false)
     }
