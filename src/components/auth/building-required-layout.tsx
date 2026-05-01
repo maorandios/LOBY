@@ -19,7 +19,9 @@ export function BuildingRequiredLayout() {
   const hideFeedChrome =
     (location.pathname.startsWith('/post/') &&
       /^\/post\/[^/]+$/.test(location.pathname)) ||
-    location.pathname === '/profile'
+    location.pathname === '/profile' ||
+    location.pathname === '/building' ||
+    location.pathname.startsWith('/building/')
   const navType = useNavigationType()
   const prevPathKey = useRef<string | null>(null)
   const pathKey = `${location.pathname}${location.search}`

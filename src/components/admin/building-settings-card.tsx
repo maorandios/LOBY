@@ -2,26 +2,23 @@ import { useState } from 'react'
 import {
   Building2,
   Check,
-  CircleUserRound,
-  Cog,
   Loader2,
-  Mail,
+  MapPin,
+  MapPinned,
   Pencil,
-  Phone,
+  Signpost,
   X,
   type LucideIcon,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { updateOwnMemberProfile } from '@/lib/profile-queries'
+import { adminUpdateBuildingDetails } from '@/lib/building-admin-queries'
 import { cn } from '@/lib/utils'
 
-/** Prior compact sizes × 1.25 */
 const TITLE = 'text-[1rem] font-semibold tracking-tight text-foreground sm:text-[1.016rem]'
 
 const LABEL = 'text-[0.8125rem] font-medium leading-tight text-muted-foreground'
 
-/** Value under label in settings grid rows */
 const VALUE_IN_GRID =
   'mt-0 break-words text-base font-semibold leading-snug text-foreground sm:text-[1rem]'
 
@@ -36,13 +33,15 @@ function SettingsRowDisplay({
   label,
   value,
   valueDir,
-  emailReadOnlyHint,
+  readOnlyHint,
+  readOnlyHintText,
 }: {
   icon: LucideIcon
   label: string
   value: string
   valueDir?: 'ltr' | 'rtl'
-  emailReadOnlyHint?: boolean
+  readOnlyHint?: boolean
+  readOnlyHintText?: string
 }) {
   const shown = value.trim() !== '' ? value : 'לא צוין'
   return (
@@ -54,14 +53,14 @@ function SettingsRowDisplay({
         <Icon className="size-[1.125rem] shrink-0" strokeWidth={2} />
       </span>
       <div className="min-w-0 text-start leading-tight" dir="rtl">
-        {emailReadOnlyHint ? (
+        {readOnlyHint ? (
           <div className="flex flex-row flex-wrap items-baseline justify-start gap-1.5">
             <span className={LABEL}>{label}</span>
             <span className="text-muted-foreground/70 select-none" aria-hidden>
               ·
             </span>
             <span className="text-[0.6875rem] font-medium text-muted-foreground">
-              לא ניתן לעריכה
+              {readOnlyHintText ?? 'לא ניתן לעריכה'}
             </span>
           </div>
         ) : (
@@ -84,59 +83,66 @@ function SettingsRowDisplay({
 }
 
 type Props = {
-  fullName: string | null | undefined
-  email: string | null | undefined
-  phone: string | null | undefined
-  apartmentNumber: string | null | undefined
+  buildingId: string | null
+  city: string
+  streetName: string
+  buildingNumber: string
+  fullAddress: string
   onUpdated: () => void
 }
 
-/** הגדרות משתמש — עריכת שם, טלפון ודירה (האימייל אינו נערך במסך זה). */
-export function ProfileUserSettingsCard({
-  fullName,
-  email,
-  phone,
-  apartmentNumber,
+/** הגדרות בניין — עריכת כתובת (אותו סגנון כמו הגדרות משתמש). */
+export function BuildingSettingsCard({
+  buildingId,
+  city,
+  streetName,
+  buildingNumber,
+  fullAddress,
   onUpdated,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [nameDraft, setNameDraft] = useState(fullName ?? '')
-  const [phoneDraft, setPhoneDraft] = useState(phone ?? '')
-  const [aptDraft, setAptDraft] = useState(apartmentNumber ?? '')
+  const [cityDraft, setCityDraft] = useState(city)
+  const [streetDraft, setStreetDraft] = useState(streetName)
+  const [numDraft, setNumDraft] = useState(buildingNumber)
+
+  const canEdit = Boolean(buildingId)
 
   function openEdit() {
+    if (!canEdit) return
     setSaveError(null)
-    setNameDraft(fullName ?? '')
-    setPhoneDraft(phone ?? '')
-    setAptDraft(apartmentNumber ?? '')
+    setCityDraft(city)
+    setStreetDraft(streetName)
+    setNumDraft(buildingNumber)
     setEditing(true)
   }
 
   function cancelEdit() {
     setSaveError(null)
     setEditing(false)
-    setNameDraft(fullName ?? '')
-    setPhoneDraft(phone ?? '')
-    setAptDraft(apartmentNumber ?? '')
+    setCityDraft(city)
+    setStreetDraft(streetName)
+    setNumDraft(buildingNumber)
   }
 
   async function saveEdit() {
+    if (!buildingId) return
     setSaveError(null)
-    const fn = nameDraft.trim()
-    const ph = phoneDraft.trim()
-    const apt = aptDraft.trim()
-    if (!fn || !ph || !apt) {
-      setSaveError('יש למלא שם מלא, טלפון ומספר דירה.')
+    const c = cityDraft.trim()
+    const s = streetDraft.trim()
+    const n = numDraft.trim()
+    if (!c || !s || !n) {
+      setSaveError('יש למלא עיר, שם רחוב ומספר בניין.')
       return
     }
     setSaving(true)
     try {
-      const res = await updateOwnMemberProfile({
-        fullName: fn,
-        phone: ph,
-        apartmentNumber: apt,
+      const res = await adminUpdateBuildingDetails({
+        buildingId,
+        city: c,
+        streetName: s,
+        buildingNumber: n,
       })
       if (!res.ok) {
         setSaveError(res.error ?? 'לא ניתן לשמור')
@@ -149,11 +155,11 @@ export function ProfileUserSettingsCard({
     }
   }
 
-  const emailShown = email?.trim() ? email : ''
+  const fullShown = fullAddress.trim() !== '' ? fullAddress : ''
 
   return (
     <section
-      aria-labelledby="profile-user-settings-heading"
+      aria-labelledby="building-settings-heading"
       dir="rtl"
       lang="he"
       className="px-4 py-5"
@@ -164,13 +170,13 @@ export function ProfileUserSettingsCard({
             className="flex h-5 shrink-0 items-center justify-center text-muted-foreground"
             aria-hidden
           >
-            <Cog className="size-[1.125rem] shrink-0" strokeWidth={2} />
+            <MapPinned className="size-[1.125rem] shrink-0" strokeWidth={2} />
           </span>
           <h2
-            id="profile-user-settings-heading"
+            id="building-settings-heading"
             className={cn(TITLE, 'min-w-0 text-start leading-tight')}
           >
-            הגדרות משתמש
+            הגדרות מיקום
           </h2>
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -182,7 +188,7 @@ export function ProfileUserSettingsCard({
                 size="icon"
                 disabled={saving}
                 aria-label="ביטול"
-                className="size-9 rounded-full shrink-0"
+                className="size-9 shrink-0 rounded-full"
                 onClick={() => cancelEdit()}
               >
                 <X className="size-[1.125rem]" strokeWidth={2} aria-hidden />
@@ -193,7 +199,7 @@ export function ProfileUserSettingsCard({
                 size="icon"
                 disabled={saving}
                 aria-label="שמירה"
-                className="size-9 rounded-full shrink-0"
+                className="size-9 shrink-0 rounded-full"
                 onClick={() => void saveEdit()}
               >
                 {saving ? (
@@ -208,8 +214,9 @@ export function ProfileUserSettingsCard({
               type="button"
               variant="ghost"
               size="icon"
-              aria-label="עריכת פרטים"
-              className="size-9 rounded-full shrink-0"
+              aria-label="עריכת פרטי בניין"
+              disabled={!canEdit}
+              className="size-9 shrink-0 rounded-full"
               onClick={() => openEdit()}
             >
               <Pencil className="size-[1.125rem]" strokeWidth={2} aria-hidden />
@@ -232,20 +239,20 @@ export function ProfileUserSettingsCard({
               dir="rtl"
             >
               <span className={ICON_WRAP} aria-hidden>
-                <CircleUserRound className="size-[1.125rem] shrink-0" strokeWidth={2} />
+                <MapPin className="size-[1.125rem] shrink-0" strokeWidth={2} />
               </span>
               <div className="min-w-0 text-start leading-tight" dir="rtl">
-                <label htmlFor="profile-edit-name" className={cn(LABEL, 'block text-start')}>
-                  שם מלא
+                <label htmlFor="building-edit-city" className={cn(LABEL, 'block text-start')}>
+                  עיר
                 </label>
               </div>
               <input
-                id="profile-edit-name"
-                name="fullName"
+                id="building-edit-city"
+                name="city"
                 type="text"
-                autoComplete="name"
-                value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
+                autoComplete="address-level2"
+                value={cityDraft}
+                onChange={(e) => setCityDraft(e.target.value)}
                 className={cn(FIELD, 'col-start-2 mt-0 text-start')}
                 dir="rtl"
               />
@@ -256,26 +263,23 @@ export function ProfileUserSettingsCard({
               dir="rtl"
             >
               <span className={ICON_WRAP} aria-hidden>
-                <Mail className="size-[1.125rem] shrink-0" strokeWidth={2} />
+                <Signpost className="size-[1.125rem] shrink-0" strokeWidth={2} />
               </span>
               <div className="min-w-0 text-start leading-tight" dir="rtl">
-                <div className="flex flex-row flex-wrap items-baseline justify-start gap-1.5">
-                  <span className={LABEL}>{'כתובת דוא"ל'}</span>
-                  <span className="text-muted-foreground/70 select-none" aria-hidden>
-                    ·
-                  </span>
-                  <span className="text-[0.6875rem] font-medium text-muted-foreground">
-                    לא ניתן לעריכה
-                  </span>
-                </div>
+                <label htmlFor="building-edit-street" className={cn(LABEL, 'block text-start')}>
+                  שם רחוב
+                </label>
               </div>
-              <p
-                className={cn('col-start-2', VALUE_IN_GRID, 'text-end opacity-80')}
-                dir="ltr"
-                lang="en"
-              >
-                  {emailShown || 'לא צוין'}
-                </p>
+              <input
+                id="building-edit-street"
+                name="street"
+                type="text"
+                autoComplete="street-address"
+                value={streetDraft}
+                onChange={(e) => setStreetDraft(e.target.value)}
+                className={cn(FIELD, 'col-start-2 mt-0 text-start')}
+                dir="rtl"
+              />
             </div>
 
             <div
@@ -283,23 +287,22 @@ export function ProfileUserSettingsCard({
               dir="rtl"
             >
               <span className={ICON_WRAP} aria-hidden>
-                <Phone className="size-[1.125rem] shrink-0" strokeWidth={2} />
+                <Building2 className="size-[1.125rem] shrink-0" strokeWidth={2} />
               </span>
               <div className="min-w-0 text-start leading-tight" dir="rtl">
-                <label htmlFor="profile-edit-phone" className={cn(LABEL, 'block text-start')}>
-                  מספר טלפון
+                <label htmlFor="building-edit-num" className={cn(LABEL, 'block text-start')}>
+                  מספר בניין
                 </label>
               </div>
               <input
-                id="profile-edit-phone"
-                name="phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                dir="ltr"
-                value={phoneDraft}
-                onChange={(e) => setPhoneDraft(e.target.value)}
-                className={cn(FIELD, 'col-start-2 mt-0 text-end')}
+                id="building-edit-num"
+                name="buildingNumber"
+                type="text"
+                autoComplete="off"
+                value={numDraft}
+                onChange={(e) => setNumDraft(e.target.value)}
+                className={cn(FIELD, 'col-start-2 mt-0 text-start')}
+                dir="rtl"
               />
             </div>
 
@@ -308,43 +311,39 @@ export function ProfileUserSettingsCard({
               dir="rtl"
             >
               <span className={ICON_WRAP} aria-hidden>
-                <Building2 className="size-[1.125rem] shrink-0" strokeWidth={2} />
+                <MapPinned className="size-[1.125rem] shrink-0" strokeWidth={2} />
               </span>
               <div className="min-w-0 text-start leading-tight" dir="rtl">
-                <label htmlFor="profile-edit-apt" className={cn(LABEL, 'block text-start')}>
-                  מספר דירה
-                </label>
+                <div className="flex flex-row flex-wrap items-baseline justify-start gap-1.5">
+                  <span className={LABEL}>כתובת מלאה</span>
+                  <span className="text-muted-foreground/70 select-none" aria-hidden>
+                    ·
+                  </span>
+                  <span className="text-[0.6875rem] font-medium text-muted-foreground">
+                    מתעדכן אוטומטית
+                  </span>
+                </div>
               </div>
-              <input
-                id="profile-edit-apt"
-                name="apartmentNumber"
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                value={aptDraft}
-                onChange={(e) => setAptDraft(e.target.value)}
-                className={cn(FIELD, 'col-start-2 mt-0 text-start')}
+              <p
+                className={cn('col-start-2', VALUE_IN_GRID, 'text-start opacity-80')}
                 dir="rtl"
-              />
+              >
+                {fullShown.trim() !== '' ? fullShown : '—'}
+              </p>
             </div>
           </>
         ) : (
           <>
-            <SettingsRowDisplay icon={CircleUserRound} label="שם מלא" value={fullName ?? ''} />
+            <SettingsRowDisplay icon={MapPin} label="עיר" value={city} />
+            <SettingsRowDisplay icon={Signpost} label="שם רחוב" value={streetName} />
+            <SettingsRowDisplay icon={Building2} label="מספר בניין" value={buildingNumber} />
             <SettingsRowDisplay
-              icon={Mail}
-              label='כתובת דוא"ל'
-              value={emailShown}
-              valueDir="ltr"
-              emailReadOnlyHint
+              icon={MapPinned}
+              label="כתובת מלאה"
+              value={fullAddress}
+              readOnlyHint
+              readOnlyHintText="מתעדכן אוטומטית"
             />
-            <SettingsRowDisplay
-              icon={Phone}
-              label="מספר טלפון"
-              value={phone ?? ''}
-              valueDir="ltr"
-            />
-            <SettingsRowDisplay icon={Building2} label="מספר דירה" value={apartmentNumber ?? ''} />
           </>
         )}
       </div>

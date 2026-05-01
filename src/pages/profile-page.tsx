@@ -1,19 +1,27 @@
-import { CircleUserRound, LogOut, MoveRight, ShieldUser } from 'lucide-react'
+import { useState } from 'react'
+import { CircleUserRound, MoveLeft, MoveRight, ShieldUser } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/auth/use-auth'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { PushNotificationsPanel } from '@/components/profile/push-notifications-panel'
+import {
+  POST_CREATE_BUTTON_HEX,
+  postTypeChipIconTrayClass,
+  postTypeLucideIcon,
+} from '@/components/feed/post-type-styles'
+import { LogoutConfirmSheet } from '@/components/profile/logout-confirm-sheet'
 import { ProfileDeleteAccountSection } from '@/components/profile/profile-delete-account-section'
 import { ProfileUserSettingsCard } from '@/components/profile/profile-user-settings-card'
-import { POST_CREATE_BUTTON_HEX } from '@/components/feed/post-type-styles'
+import { PushNotificationsPanel } from '@/components/profile/push-notifications-panel'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
-/** Match {@link BottomTabBar} / post-detail bottom strips. */
-const PROFILE_BOTTOM_BAR_CHROME =
-  'border-t border-zinc-200/70 bg-feed-canvas backdrop-blur-xl supports-[backdrop-filter]:bg-feed-canvas/90 dark:border-white/10'
+/** Match create-post-sheet menu rows. */
+const MENU_CHOICE_ROW =
+  'flex h-auto min-h-[4.25rem] w-full items-center touch-manipulation justify-between gap-3 rounded-2xl border border-border/50 bg-background px-3 py-3 text-start shadow-none hover:bg-muted/50'
+
+const MENU_ICON_STROKE = 2 as const
 
 const MAIN_SCROLL_BOTTOM =
   'pb-[calc(env(safe-area-inset-bottom,0px)+5.5rem)]'
@@ -24,9 +32,19 @@ export function ProfilePage() {
   const navigate = useNavigate()
   const email = session?.user?.email ?? ''
 
-  async function handleLogout() {
-    await signOutApp()
-    navigate('/login', { replace: true })
+  const [logoutSheetOpen, setLogoutSheetOpen] = useState(false)
+  const [logoutBusy, setLogoutBusy] = useState(false)
+
+  const MenuLogoutIcon = postTypeLucideIcon['דיווח']
+
+  async function confirmLogout() {
+    setLogoutBusy(true)
+    try {
+      await signOutApp()
+      navigate('/login', { replace: true })
+    } finally {
+      setLogoutBusy(false)
+    }
   }
 
   function handleBack() {
@@ -127,21 +145,49 @@ export function ProfilePage() {
             <ProfileDeleteAccountSection />
           </div>
         ) : null}
-      </main>
 
-      <div className={cn('fixed inset-x-0 bottom-0 z-40', PROFILE_BOTTOM_BAR_CHROME)}>
-        <div className="mx-auto w-full max-w-lg px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="mt-4">
           <Button
             type="button"
-            variant="outline"
-            className="h-11 w-full touch-manipulation gap-2 rounded-full border-destructive/40 text-base text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => void handleLogout()}
+            variant="ghost"
+            className={cn(MENU_CHOICE_ROW, 'h-auto font-normal')}
+            onClick={() => setLogoutSheetOpen(true)}
           >
-            <LogOut className="size-4 shrink-0" aria-hidden />
-            התנתקות
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span
+                className={cn(
+                  'flex size-11 shrink-0 items-center justify-center rounded-full',
+                  postTypeChipIconTrayClass('דיווח'),
+                )}
+              >
+                <MenuLogoutIcon
+                  className="size-5 shrink-0"
+                  strokeWidth={MENU_ICON_STROKE}
+                  aria-hidden
+                />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+                <span className="text-base font-semibold text-foreground">התנתקות</span>
+                <span className="text-[0.8rem] font-normal text-muted-foreground">
+                  יציאה מהחשבון במכשיר זה
+                </span>
+              </span>
+            </div>
+            <MoveLeft
+              className="size-5 shrink-0 text-muted-foreground"
+              strokeWidth={MENU_ICON_STROKE}
+              aria-hidden
+            />
           </Button>
         </div>
-      </div>
+      </main>
+
+      <LogoutConfirmSheet
+        open={logoutSheetOpen}
+        onOpenChange={setLogoutSheetOpen}
+        busy={logoutBusy}
+        onConfirmLogout={confirmLogout}
+      />
     </div>
   )
 }

@@ -14,6 +14,7 @@ import { FeedHeader } from '@/components/feed/feed-header'
 import { PinnedPostNotice } from '@/components/feed/pinned-post-notice'
 import { PostCard } from '@/components/feed/post-card'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/auth/use-auth'
 import { useFeedRefresh } from '@/context/feed-refresh-context'
 import {
   type FeedTabMode,
@@ -40,7 +41,10 @@ export type FeedPageProps = {
   mode?: FeedTabMode
 }
 
-function emptyHint(mode: FeedTabMode): string {
+function emptyHint(mode: FeedTabMode, myPostsOnly: boolean): string {
+  if (myPostsOnly) {
+    return 'לא מצאנו פוסטים שפרסמת בסינון הנוכחי.'
+  }
   switch (mode) {
     case 'all':
       return 'עדיין אין פוסטים בפיד.'
@@ -59,6 +63,7 @@ function emptyHint(mode: FeedTabMode): string {
 
 export function FeedPage({ mode = 'all' }: FeedPageProps) {
   const location = useLocation()
+  const { session } = useAuth()
   const { member, isAdmin, loading: membershipLoading } = useBuildingMembership()
   const { feedVersion } = useFeedRefresh()
   const newInviteCode = (location.state as FeedLocationState | null)?.newInviteCode
@@ -82,6 +87,9 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     resolvedBuildingLabel ?? cachedBuildingLabel ?? 'טוען…'
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [myPostsOnly, setMyPostsOnly] = useState(false)
+
+  const currentUserId = session?.user?.id ?? null
 
   const sentinelRef = useRef<HTMLDivElement>(null)
   const postsLenRef = useRef(0)
@@ -90,7 +98,10 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
   }, [posts.length])
 
   useEffect(() => {
-    if (!bid) setResolvedBuildingLabel(null)
+    if (!bid) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear stale label when building id clears
+      setResolvedBuildingLabel(null)
+    }
   }, [bid])
 
   const loadFeed = useCallback(
@@ -173,25 +184,37 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     Boolean(member?.building_id && !loading)
   )
 
-  const filtered = useMemo(
+  const tabFiltered = useMemo(
     () => posts.filter((p) => feedPostMatchesTabMode(p, mode)),
     [posts, mode]
   )
 
-  /** Tab filter: first pages may have no matches — fetch until some appear or feed ends. */
+  const filtered = useMemo(() => {
+    if (!myPostsOnly || !currentUserId) return tabFiltered
+    return tabFiltered.filter((p) => p.authorId === currentUserId)
+  }, [tabFiltered, myPostsOnly, currentUserId])
+
+  const needMoreForDisplay = useMemo(() => {
+    if (!hasMore || loading || loadingMore || posts.length === 0) return false
+    if (filtered.length > 0) return false
+    if (mode === 'all' && !myPostsOnly) return false
+    return true
+  }, [
+    hasMore,
+    loading,
+    loadingMore,
+    posts.length,
+    filtered.length,
+    mode,
+    myPostsOnly,
+  ])
+
+  /* eslint-disable react-hooks/set-state-in-effect -- fetch more pages until tab / “my posts” filter can show rows */
   useEffect(() => {
-    if (
-      mode === 'all' ||
-      loading ||
-      loadingMore ||
-      !hasMore ||
-      filtered.length > 0
-    ) {
-      return
-    }
-    if (posts.length === 0) return
+    if (!needMoreForDisplay) return
     void loadMore()
-  }, [mode, loading, loadingMore, hasMore, filtered.length, posts.length, loadMore])
+  }, [needMoreForDisplay, loadMore])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   /** Short viewport / sentinel still visible — IO may not refire until scroll. */
   useEffect(() => {
@@ -232,8 +255,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
   )
 
   const showSentinelFooter =
-    (filtered.length > 0 && hasMore) ||
-    (mode !== 'all' && filtered.length === 0 && hasMore && posts.length > 0)
+    (filtered.length > 0 && hasMore) || needMoreForDisplay
 
   useFeedSentinelLoadMore({
     sentinelRef,
@@ -259,17 +281,27 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     !loading &&
     !membershipLoading &&
     mode !== 'all' &&
-    filtered.length === 0 &&
+    tabFiltered.length === 0 &&
     !hasMore &&
     posts.length > 0
 
-  const tabFilterStillSearching =
+  const myPostsFilterEmptyLoaded =
     !loading &&
     !membershipLoading &&
-    mode !== 'all' &&
+    myPostsOnly &&
+    Boolean(currentUserId) &&
+    filtered.length === 0 &&
+    !hasMore &&
+    posts.length > 0 &&
+    (mode === 'all' || tabFiltered.length > 0)
+
+  const filterStillSearching =
+    !loading &&
+    !membershipLoading &&
     filtered.length === 0 &&
     hasMore &&
-    posts.length > 0
+    posts.length > 0 &&
+    (mode !== 'all' || myPostsOnly)
 
   const hasInviteBanner = Boolean(inviteUrl && member?.role === 'admin')
   const firstPostPinned = Boolean(filtered[0]?.pinned)
@@ -280,7 +312,8 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     !loading &&
     !noPostsInBuilding &&
     !tabFilterEmptyLoaded &&
-    !(filtered.length === 0 && tabFilterStillSearching) &&
+    !myPostsFilterEmptyLoaded &&
+    !(filtered.length === 0 && filterStillSearching) &&
     firstPostPinned &&
     !hasInviteBanner
 
@@ -290,7 +323,13 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
       className="min-h-svh bg-feed-canvas pb-[calc(11rem+env(safe-area-inset-bottom,0px))]"
     >
       <div className="bg-feed-canvas pt-[env(safe-area-inset-top)]">
-        <FeedHeader buildingName={buildingTitle} />
+        <FeedHeader
+          buildingName={buildingTitle}
+          myPostsOnly={myPostsOnly}
+          onToggleMyPostsOnly={
+            currentUserId ? () => setMyPostsOnly((v) => !v) : undefined
+          }
+        />
       </div>
 
       <div className="-mt-px flex flex-col overflow-x-clip bg-feed-canvas">
@@ -366,7 +405,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
                 אין פריטים להצגה
               </p>
               <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-                {emptyHint(mode)}
+                {emptyHint(mode, false)}
               </p>
             </div>
           ) : tabFilterEmptyLoaded ? (
@@ -375,12 +414,21 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
                 אין פריטים להצגה
               </p>
               <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-                {emptyHint(mode)}
+                {emptyHint(mode, false)}
+              </p>
+            </div>
+          ) : myPostsFilterEmptyLoaded ? (
+            <div className="flex min-h-[45vh] flex-col items-center justify-center gap-2 px-4 text-center">
+              <p className="text-base font-medium text-foreground">
+                אין פריטים להצגה
+              </p>
+              <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+                {emptyHint(mode, true)}
               </p>
             </div>
           ) : (
             <>
-              {filtered.length === 0 && tabFilterStillSearching ? (
+              {filtered.length === 0 && filterStillSearching ? (
                 <div
                   role="status"
                   className="mb-6 flex flex-col items-center gap-3 py-8 text-muted-foreground"

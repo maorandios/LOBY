@@ -204,3 +204,28 @@
     opacity: 1 !important;
   }
 }
+
+/* Full-screen loader (ellipsis icon): gentle vertical pulse */
+@keyframes loby-loading-ellipsis {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-6px);
+  }
+}
+
+.animate-loby-loading-ellipsis {
+  animation: loby-loading-ellipsis 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-loby-loading-ellipsis {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

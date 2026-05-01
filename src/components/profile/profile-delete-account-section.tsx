@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UserRoundX } from 'lucide-react'
+import { Trash2, UserRoundX } from 'lucide-react'
 
 import { useAuth } from '@/auth/use-auth'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { DeleteAccountSheet } from '@/components/profile/delete-account-sheet'
 import { deleteAccountViaEdge } from '@/lib/account-queries'
 import { cn } from '@/lib/utils'
@@ -14,15 +14,6 @@ const BODY =
   'mt-2 text-[0.8125rem] font-medium leading-relaxed text-pretty text-muted-foreground'
 
 const SECTION_SHELL = 'px-4 py-5'
-
-/** Title row destructive action — aligns with התראות פוש toggle / הגדרות עריכה. */
-function headerDeleteBtnClass(disabled?: boolean) {
-  return cn(
-    buttonVariants({ variant: 'ghost', size: 'sm' }),
-    'h-9 shrink-0 touch-manipulation rounded-full px-3 text-sm font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive',
-    disabled && 'pointer-events-none opacity-50'
-  )
-}
 
 /** מחיקת חשבון — פרופיל, פאנל אישור תחתון כמו במחיקת פוסט. */
 export function ProfileDeleteAccountSection() {
@@ -76,14 +67,17 @@ export function ProfileDeleteAccountSection() {
           </div>
           <Button
             type="button"
-            className={headerDeleteBtnClass(false)}
+            variant="ghost"
+            size="icon"
+            aria-label="מחיקת חשבון"
+            className="size-9 shrink-0 rounded-full"
             onClick={() => openSheet()}
           >
-            מחק חשבון
+            <Trash2 className="size-[1.125rem]" strokeWidth={2} aria-hidden />
           </Button>
         </div>
         <p className={BODY}>
-          לאחר מחיקת החשבון לא תוכלו להתחבר שוב לאפליקציה, לעדכן פוסטים קיימים או ליצור חדשים
+          לאחר מחיקת החשבון לא תוכלו להתחבר שוב לאפליקציה, לעדכן פוסטים קיימים או ליצור חדשים וכל התוכן שפריסמתם באפליקציה ימחק כולל תגובות והצבעה לסקרים.
         </p>
       </section>
 

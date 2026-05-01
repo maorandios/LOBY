@@ -9,7 +9,13 @@ import { JoinBuildingPage } from '@/pages/join-building-page'
 import { LoginPage } from '@/pages/login-page'
 import { OnboardingAdminPage } from '@/pages/onboarding-admin-page'
 import { PostDetailPage } from '@/pages/post-detail-page'
-import { BuildingManagementPage } from '@/pages/building-management-page'
+import { BuildingAdminHubPage } from '@/pages/building/building-admin-hub-page'
+import { BuildingAdminLayout } from '@/pages/building/building-admin-layout'
+import { BuildingInviteResidentsPage } from '@/pages/building/building-invite-page'
+import { BuildingPendingApprovalsPage } from '@/pages/building/building-pending-page'
+import { BuildingResidentsPage } from '@/pages/building/building-residents-page'
+import { BuildingSettingsPage } from '@/pages/building/building-settings-page'
+import { BuildingStatsPage } from '@/pages/building/building-stats-page'
 import { ProfilePage } from '@/pages/profile-page'
 import { PostLoginRedirectPage } from '@/pages/post-login-redirect-page'
 
@@ -39,7 +45,14 @@ export default function App() {
             <Route path="votes" element={<FeedPage mode="polls" />} />
             <Route path="post/:postId" element={<PostDetailPage />} />
             <Route path="profile" element={<ProfilePage />} />
-            <Route path="building" element={<BuildingManagementPage />} />
+            <Route path="building" element={<BuildingAdminLayout />}>
+              <Route index element={<BuildingAdminHubPage />} />
+              <Route path="settings" element={<BuildingSettingsPage />} />
+              <Route path="residents" element={<BuildingResidentsPage />} />
+              <Route path="pending" element={<BuildingPendingApprovalsPage />} />
+              <Route path="invite" element={<BuildingInviteResidentsPage />} />
+              <Route path="stats" element={<BuildingStatsPage />} />
+            </Route>
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

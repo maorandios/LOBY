@@ -1,12 +1,16 @@
-import { MapPin, UserRound } from 'lucide-react'
+import { MapPin, Star, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { buttonVariants } from '@/components/ui/button'
+import { POST_CREATE_BUTTON_HEX } from '@/components/feed/post-type-styles'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 type Props = {
   buildingName: string
   className?: string
+  /** When set, shows star control in the physical top-right slot (LTR grid column 3). */
+  myPostsOnly?: boolean
+  onToggleMyPostsOnly?: () => void
 }
 
 /** Icon-only profile entry. Default: fixed to physical left of the viewport. */
@@ -35,12 +39,17 @@ export function ProfileCornerLink({
   )
 }
 
-export function FeedHeader({ buildingName, className }: Props) {
+export function FeedHeader({
+  buildingName,
+  className,
+  myPostsOnly = false,
+  onToggleMyPostsOnly,
+}: Props) {
   return (
     <header className={cn('pb-3 pt-[max(1rem,env(safe-area-inset-top))]', className)}>
       {/*
         `dir=ltr` gives stable physical columns regardless of Hebrew root `dir`:
-        slot 1 — profile · slot 2 — title (RTL text inside) · slot 3 — empty balance.
+        slot 1 — profile · slot 2 — title (RTL text inside) · slot 3 — my-posts filter.
       */}
       <div
         dir="ltr"
@@ -62,7 +71,39 @@ export function FeedHeader({ buildingName, className }: Props) {
             {buildingName}
           </h1>
         </div>
-        <span className="w-10 shrink-0 justify-self-center" aria-hidden />
+        <div className="flex justify-center">
+          {onToggleMyPostsOnly ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-10 shrink-0 rounded-full text-foreground"
+              aria-pressed={myPostsOnly}
+              aria-label={
+                myPostsOnly
+                  ? 'הצגת כל הפוסטים'
+                  : 'סינון לפוסטים שפרסמתי בלבד'
+              }
+              onClick={onToggleMyPostsOnly}
+            >
+              <Star
+                className={cn(
+                  'size-[1.35rem] transition-[fill,color]',
+                  myPostsOnly ? '' : 'fill-none text-muted-foreground'
+                )}
+                style={
+                  myPostsOnly
+                    ? { fill: POST_CREATE_BUTTON_HEX, color: POST_CREATE_BUTTON_HEX }
+                    : undefined
+                }
+                strokeWidth={2}
+                aria-hidden
+              />
+            </Button>
+          ) : (
+            <span className="inline-flex size-10 shrink-0" aria-hidden />
+          )}
+        </div>
       </div>
     </header>
   )
