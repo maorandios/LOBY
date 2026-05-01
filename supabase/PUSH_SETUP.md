@@ -18,15 +18,39 @@ Notifications are scoped per building subscription row; the Edge Function `notif
    Add exactly: **`VAPID_PUBLIC_KEY`**, **`VAPID_PRIVATE_KEY`**, **`PUSH_HOOK_SECRET`** (same values the script printed).  
    Optional: **`PUBLIC_APP_ORIGIN`** = your live site URL (e.g. `https://xxx.vercel.app`) so notification taps open the app.
 
-4. Deploy the function (Supabase CLI linked to this project):
+4. Deploy the function (Supabase CLI linked to this project). Prefer **disabling JWT verification** for this internal hook (Postgres does not send a user session):
 
    ```bash
-   supabase functions deploy notify-push --project-ref YOUR_PROJECT_REF
+   supabase functions deploy notify-push --project-ref YOUR_PROJECT_REF --no-verify-jwt
    ```
 
-5. **Supabase → SQL Editor** — run the **`UPDATE public.push_delivery_config`** block the script printed (or edit `supabase/sql/push_delivery_config_update_TEMPLATE.sql`).
+   If you **must** leave JWT verification on, skip `--no-verify-jwt` and complete step 5 with **`edge_invoke_jwt`** set (below).
+
+5. **Supabase → SQL Editor** — run the **`UPDATE public.push_delivery_config`** block the script printed (must include **`edge_invoke_jwt`** = project **anon** key from **Settings → API** if your function still enforces JWT at the gateway). See `supabase/sql/push_delivery_config_update_TEMPLATE.sql`.
 
 6. **Database → Extensions** — ensure **pg_net** is enabled.
+
+---
+
+## If the toggle works but no notifications ever arrive
+
+Triggers call `notify-push` via **pg_net**. The Supabase **API gateway** often returns **401** to requests that only send `x-push-hook-secret` (no `Authorization` / `apikey`). Fix **one** of these:
+
+1. **Recommended:** deploy with `--no-verify-jwt` and confirm in **Dashboard → Edge Functions → notify-push** that “Verify JWT” is off for that function.
+
+2. **Or** run (after migration `20260503120000_push_dispatch_edge_jwt.sql`):
+
+   ```sql
+   UPDATE public.push_delivery_config
+   SET edge_invoke_jwt = '<< paste anon public key (JWT) from Settings → API >>'
+   WHERE id = 1;
+   ```
+
+   Then `dispatch_push_webhook` adds `Authorization: Bearer …` and `apikey` for the gateway.
+
+3. Confirm **`edge_function_url`** and **`hook_secret`** are set and **pg_net** is enabled. Check **Edge Function logs** for `[notify-push] event` after someone else in the building creates a post.
+
+4. **You are not notified for your own posts** — test with another account or another neighbor in the same building.
 
 ---
 
@@ -64,16 +88,19 @@ After deploying the function, run in the **SQL Editor** (replace placeholders):
 UPDATE public.push_delivery_config
 SET
   edge_function_url = 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/notify-push',
-  hook_secret = 'THE_SAME_PUSH_HOOK_SECRET_AS_ABOVE'
+  hook_secret = 'THE_SAME_PUSH_HOOK_SECRET_AS_ABOVE',
+  edge_invoke_jwt = 'ANON_PUBLIC_JWT_FROM_SETTINGS_API'
 WHERE id = 1;
 ```
 
-Leave both `NULL` to disable outbound HTTP dispatch (subscriptions can still be stored).
+`edge_invoke_jwt` is optional if you deploy **`notify-push`** with **`--no-verify-jwt`** and JWT verification is off in the Dashboard (see troubleshooting above). Otherwise set it to the **anon** key.
+
+Leave URL and secret `NULL` to disable outbound HTTP dispatch (subscriptions can still be stored).
 
 ## 4. Deploy the Edge Function
 
 ```bash
-supabase functions deploy notify-push --project-ref YOUR_PROJECT_REF
+supabase functions deploy notify-push --project-ref YOUR_PROJECT_REF --no-verify-jwt
 ```
 
 ## 5. HTTPS and PWA
