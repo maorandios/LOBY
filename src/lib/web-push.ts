@@ -186,6 +186,7 @@ export async function subscribeAndSave(
   if (!registration) {
     return { ok: false, message: 'לא ניתן לרשום service worker' }
   }
+  const swReg: ServiceWorkerRegistration = registration
 
   // Subscribe requires an active worker; on mobile first install can lag behind register().
   try {
@@ -198,7 +199,7 @@ export async function subscribeAndSave(
   const keyMaterial = urlBase64ToUint8Array(vapid)
 
   async function doSubscribe(): Promise<PushSubscription> {
-    return registration.pushManager.subscribe({
+    return swReg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: keyMaterial as unknown as BufferSource,
     })
@@ -227,7 +228,7 @@ export async function subscribeAndSave(
     }
 
     // Subscription was created with a different VAPID key (env change / key rotation). Drop it and retry.
-    const existing = await registration.pushManager.getSubscription()
+    const existing = await swReg.pushManager.getSubscription()
     if (existing) {
       const oldEndpoint = existing.endpoint
       try {
