@@ -105,7 +105,8 @@ export async function loadPushSubscriptionState(
 }
 
 export async function subscribeAndSave(
-  buildingId: string
+  buildingId: string,
+  options?: { permissionAlreadyGranted?: boolean }
 ): Promise<{ ok: boolean; message?: string }> {
   const vapid = getVapidPublicKey()
   if (!vapid) {
@@ -119,17 +120,21 @@ export async function subscribeAndSave(
     return { ok: false, message: 'נדרשת התחברות' }
   }
 
+  if (!options?.permissionAlreadyGranted) {
+    let perm = Notification.permission
+    if (perm === 'default') {
+      perm = await Notification.requestPermission()
+    }
+    if (perm !== 'granted') {
+      return { ok: false, message: 'לא אישרתם התראות בדפדפן' }
+    }
+  } else if (Notification.permission !== 'granted') {
+    return { ok: false, message: 'נדרשת הרשאת התראות' }
+  }
+
   const registration = await ensureServiceWorker()
   if (!registration) {
     return { ok: false, message: 'לא ניתן לרשום service worker' }
-  }
-
-  let perm = Notification.permission
-  if (perm === 'default') {
-    perm = await Notification.requestPermission()
-  }
-  if (perm !== 'granted') {
-    return { ok: false, message: 'לא אישרתם התראות בדפדפן' }
   }
 
   const keyMaterial = urlBase64ToUint8Array(vapid)

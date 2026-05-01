@@ -5,7 +5,6 @@ import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { cn } from '@/lib/utils'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import {
-  ensureServiceWorker,
   getVapidPublicKey,
   isAppleMobileDevice,
   isStandalonePwa,
@@ -63,7 +62,7 @@ function NotificationSwitch({
       onClick={onToggle}
       className={cn(
         /* box-content, overflow-hidden, m-0, h-[26px] — per inspector tuning */
-        'relative m-0 inline-flex h-[26px] w-[3.125rem] shrink-0 cursor-pointer overflow-hidden rounded-full [box-sizing:content-box] outline-none',
+        'relative inline-flex h-[26px] w-[3.125rem] shrink-0 cursor-pointer touch-manipulation overflow-hidden rounded-full p-3 -m-3 [box-sizing:content-box] outline-none [-webkit-tap-highlight-color:transparent]',
         checked
           ? 'border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_3px_rgba(94,0,255,0.35)]'
           : 'border border-border/60 bg-muted/80 shadow-inner shadow-black/[0.04] hover:bg-muted',
@@ -141,14 +140,31 @@ export function PushNotificationsPanel() {
 
   async function handleEnable() {
     setNote(null)
+    if (!member?.building_id) {
+      setNote('לא נמצא בניין.')
+      return
+    }
+    if (!getVapidPublicKey()) {
+      setNote('חסר מפתח VAPID. פנו למנהל המערכת.')
+      return
+    }
+
+    // iOS Safari: call requestPermission before other awaits (e.g. service worker) so it stays in the user-gesture chain.
+    let perm = Notification.permission
+    if (perm === 'default') {
+      perm = await Notification.requestPermission()
+    }
+    if (perm !== 'granted') {
+      setNote('לא אישרתם התראות בדפדפן')
+      void refresh()
+      return
+    }
+
     setBusy(true)
     try {
-      await ensureServiceWorker()
-      if (!member?.building_id) {
-        setNote('לא נמצא בניין.')
-        return
-      }
-      const res = await subscribeAndSave(member.building_id)
+      const res = await subscribeAndSave(member.building_id, {
+        permissionAlreadyGranted: true,
+      })
       if (!res.ok) {
         setNote(res.message ?? 'לא ניתן להפעיל התראות')
         return
