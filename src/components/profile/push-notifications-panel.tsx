@@ -61,8 +61,8 @@ function NotificationSwitch({
       dir="ltr"
       onClick={onToggle}
       className={cn(
-        /* box-content, overflow-hidden, m-0, h-[26px] — per inspector tuning */
-        'relative inline-flex h-[26px] w-[3.125rem] shrink-0 cursor-pointer touch-manipulation overflow-hidden rounded-full p-3 -m-3 [box-sizing:content-box] outline-none [-webkit-tap-highlight-color:transparent]',
+        /* Compact track — same visual size as original; touch-manipulation helps taps without padding bloat */
+        'relative m-0 inline-flex h-[26px] w-[3.125rem] shrink-0 cursor-pointer touch-manipulation overflow-hidden rounded-full [box-sizing:content-box] outline-none [-webkit-tap-highlight-color:transparent]',
         checked
           ? 'border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_1px_3px_rgba(94,0,255,0.35)]'
           : 'border border-border/60 bg-muted/80 shadow-inner shadow-black/[0.04] hover:bg-muted',
