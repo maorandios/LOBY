@@ -152,20 +152,36 @@ async function sendToUsers(
       console.warn("[notify-push] skip row missing keys", sid);
       continue;
     }
+    const isApple = sub.endpoint.includes("web.push.apple.com");
     try {
-      await webpush.sendNotification(sub, payload, {
+      const res = await webpush.sendNotification(sub, payload, {
         TTL: 3600,
+        // Apple ignores urgency=low, web-push lib defaults are fine; explicit `high` helps some browsers.
+        urgency: "high",
       });
       sendOk++;
+      console.log(
+        "[notify-push] send ok",
+        isApple ? "apple" : "other",
+        (res as { statusCode?: number })?.statusCode,
+        sid,
+      );
     } catch (e: unknown) {
       sendFail++;
       const statusCode = (e as { statusCode?: number })?.statusCode;
       const errBody = (e as { body?: string })?.body;
       if (statusCode === 410 || statusCode === 404) {
+        console.warn(
+          "[notify-push] removed gone",
+          isApple ? "apple" : "other",
+          statusCode,
+          sid,
+        );
         await removeDeadSubscription(sb, sid);
       } else {
         console.error(
           "[notify-push] send fail",
+          isApple ? "apple" : "other",
           statusCode,
           errBody ?? "",
           e,
