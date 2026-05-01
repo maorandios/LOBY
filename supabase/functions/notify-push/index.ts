@@ -60,6 +60,34 @@ async function removeDeadSubscription(
   await sb.from("push_subscriptions").delete().eq("id", id);
 }
 
+function parseWebPushSubscription(
+  endpointColumn: string,
+  jsonUnknown: unknown,
+): Parameters<typeof webpush.sendNotification>[0] | null {
+  if (!jsonUnknown || typeof jsonUnknown !== "object") return null;
+  const j = jsonUnknown as Record<string, unknown>;
+  const endpoint =
+    typeof j.endpoint === "string" && j.endpoint.length > 0
+      ? j.endpoint
+      : endpointColumn;
+  if (!endpoint) return null;
+  const keysRaw = j.keys;
+  if (!keysRaw || typeof keysRaw !== "object") return null;
+  const keys = keysRaw as Record<string, unknown>;
+  const p256dh = keys.p256dh;
+  const auth = keys.auth;
+  if (typeof p256dh !== "string" || typeof auth !== "string") return null;
+  if (!p256dh.length || !auth.length) return null;
+  const out: Parameters<typeof webpush.sendNotification>[0] = {
+    endpoint,
+    keys: { p256dh, auth },
+  };
+  if (typeof j.expirationTime === "number") {
+    out.expirationTime = j.expirationTime;
+  }
+  return out;
+}
+
 async function sendToUsers(
   sb: Supabase,
   userIds: string[],
@@ -82,6 +110,15 @@ async function sendToUsers(
     return;
   }
 
+  console.log(
+    `[notify-push] building=${buildingId} target_users=${unique.length} subscription_rows=${subs?.length ?? 0}`,
+  );
+  if (unique.length > 0 && (subs?.length ?? 0) === 0) {
+    console.warn(
+      "[notify-push] no subscription rows for these users in this building",
+    );
+  }
+
   const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
   const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
   const contact = Deno.env.get("VAPID_CONTACT_MAILTO") ??
@@ -100,24 +137,47 @@ async function sendToUsers(
     data,
   });
 
+  let skippedBadJson = 0;
+  let sendOk = 0;
+  let sendFail = 0;
+
   for (const row of subs ?? []) {
     const sid = row.id as string;
-    const subUnknown = row.subscription_json as unknown;
-    if (!subUnknown || typeof subUnknown !== "object") continue;
-
-    const sub = subUnknown as Parameters<typeof webpush.sendNotification>[0];
+    const sub = parseWebPushSubscription(
+      String(row.endpoint ?? ""),
+      row.subscription_json,
+    );
+    if (!sub) {
+      skippedBadJson++;
+      console.warn("[notify-push] skip row missing keys", sid);
+      continue;
+    }
     try {
       await webpush.sendNotification(sub, payload, {
         TTL: 3600,
       });
+      sendOk++;
     } catch (e: unknown) {
+      sendFail++;
       const statusCode = (e as { statusCode?: number })?.statusCode;
+      const errBody = (e as { body?: string })?.body;
       if (statusCode === 410 || statusCode === 404) {
         await removeDeadSubscription(sb, sid);
       } else {
-        console.error("[notify-push] send fail", e);
+        console.error(
+          "[notify-push] send fail",
+          statusCode,
+          errBody ?? "",
+          e,
+        );
       }
     }
+  }
+
+  if (skippedBadJson > 0 || sendFail > 0) {
+    console.log(
+      `[notify-push] send summary ok=${sendOk} fail=${sendFail} skipped=${skippedBadJson}`,
+    );
   }
 }
 
@@ -171,6 +231,7 @@ Deno.serve(async (req: Request) => {
   );
 
   const ev = body["event"] as string | undefined;
+  console.log("[notify-push] event", ev ?? "(none)");
 
   try {
     if (ev === "post_insert") {
