@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { AuthScreenShell } from '@/components/auth/auth-screen-shell'
+import { LoginFriendsLottie } from '@/components/auth/login-friends-lottie'
 import { Button } from '@/components/ui/button'
 import { consumePostAuthRedirect, stashPostAuthRedirect } from '@/lib/post-auth-redirect'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
@@ -59,6 +60,12 @@ function hebrewAuthError(message: string): string {
 
 function sanitizeOtp(raw: string): string {
   return raw.replace(/\D/g, '').slice(0, OTP_LENGTH)
+}
+
+function LoginShell({ children }: { children: ReactNode }) {
+  return (
+    <AuthScreenShell bottomFullWidth={<LoginFriendsLottie />}>{children}</AuthScreenShell>
+  )
 }
 
 export function LoginPage() {
@@ -179,7 +186,7 @@ export function LoginPage() {
   if (step === 'code') {
     const destEmail = email.trim()
     return (
-      <AuthScreenShell>
+      <LoginShell>
         <header className="flex flex-col gap-2 text-right">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             הזינו את הקוד מהמייל
@@ -244,12 +251,12 @@ export function LoginPage() {
             שינוי כתובת המייל
           </Button>
         </form>
-      </AuthScreenShell>
+      </LoginShell>
     )
   }
 
   return (
-    <AuthScreenShell>
+    <LoginShell>
       <header className="flex flex-col gap-2 text-right">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           כניסה למערכת
@@ -321,6 +328,6 @@ export function LoginPage() {
           {loading ? 'שולחים…' : 'שלחו לי קוד בהודעה'}
         </Button>
       </form>
-    </AuthScreenShell>
+    </LoginShell>
   )
 }

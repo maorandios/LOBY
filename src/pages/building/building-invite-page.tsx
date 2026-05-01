@@ -17,8 +17,9 @@ const INTRO_COPY =
 const COPY_SUBTITLE =
   'לחצו כדי להעתיק את הלינק להצטרפות ושלחו לדיריים'
 
-const SHARE_SUBTITLE =
-  'לחצו כדי לשלוח את לינק ההצטרפות ישירות דרך הוואטצאפ'
+const COPY_TITLE = 'העתקת קישור'
+
+const SHARE_SUBTITLE = 'לחצו כדי לשתף את הלינק בוואטצאפ'
 
 const SHARE_TITLE = 'שיתוף בוואטצאפ'
 
@@ -73,7 +74,7 @@ export function BuildingInviteResidentsPage() {
 
           <div className="mt-2 flex flex-col gap-2">
             <AdminMenuActionRow
-              title="העתק קישור"
+              title={COPY_TITLE}
               subtitle={COPY_SUBTITLE}
               icon={Copy}
               disabled={!showCopy}

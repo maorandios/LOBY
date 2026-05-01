@@ -12,6 +12,10 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  /** Pre-bundle heavy CJS deps so the dev optimizer does not 504 after dependency changes. */
+  optimizeDeps: {
+    include: ['lottie-web'],
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
