@@ -30,6 +30,8 @@ Notifications are scoped per building subscription row; the Edge Function `notif
 
 6. **Database → Extensions** — ensure **pg_net** is enabled.
 
+7. **Run migrations** on the hosted project (`supabase db push` or SQL Editor). The migration `20260504120000_push_client_invoke_triggers.sql` switches **named** posts and **all comments** to client-invoked `notify-push` (reliable in production). **Anonymous** new posts still use the optional DB trigger.
+
 ---
 
 ## If the toggle works but no notifications ever arrive

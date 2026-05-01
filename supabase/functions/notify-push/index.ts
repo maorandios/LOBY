@@ -193,15 +193,6 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  const hook = req.headers.get("x-push-hook-secret");
-  const secret = Deno.env.get("PUSH_HOOK_SECRET") ?? "";
-  if (!secret || hook !== secret) {
-    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
-      status: 401,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   if (!supabaseUrl || !serviceKey) {
@@ -225,13 +216,83 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  const hook = req.headers.get("x-push-hook-secret");
+  const secret = Deno.env.get("PUSH_HOOK_SECRET") ?? "";
+  const hookOk = Boolean(secret && hook === secret);
+
+  if (!hookOk) {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!anonKey || !authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userSb = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const {
+      data: { user },
+      error: authErr,
+    } = await userSb.auth.getUser();
+    if (authErr || !user?.id) {
+      return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const evPre = body["event"] as string | undefined;
+    if (evPre === "comment_insert") {
+      const cid = body["comment_id"] as string | undefined;
+      if (!cid) {
+        return new Response(JSON.stringify({ ok: false, error: "comment_id" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: c } = await sb.from("comments").select("author_id").eq("id", cid).maybeSingle();
+      if (!c || c.author_id !== user.id) {
+        return new Response(JSON.stringify({ ok: false, error: "forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else if (evPre === "post_insert") {
+      const pid = body["post_id"] as string | undefined;
+      if (!pid) {
+        return new Response(JSON.stringify({ ok: false, error: "post_id" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: p } = await sb.from("posts").select("author_id").eq("id", pid).maybeSingle();
+      if (!p || p.author_id !== user.id) {
+        return new Response(JSON.stringify({ ok: false, error: "forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      return new Response(
+        JSON.stringify({ ok: false, error: "invalid_client_event" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+  }
+
   const appOrigin = (Deno.env.get("PUBLIC_APP_ORIGIN") ?? Deno.env.get("SITE_URL") ?? "http://localhost:3000").replace(
     /\/$/,
     "",
   );
 
   const ev = body["event"] as string | undefined;
-  console.log("[notify-push] event", ev ?? "(none)");
+  console.log("[notify-push] event", ev ?? "(none)", hookOk ? "hook" : "client");
 
   try {
     if (ev === "post_insert") {
@@ -253,6 +314,14 @@ Deno.serve(async (req: Request) => {
       const userIds = (members ?? [])
         .map((m: { user_id: string }) => m.user_id)
         .filter((uid: string) => authorId == null || uid !== authorId);
+
+      console.log("[notify-push] post_insert", {
+        postId,
+        authorId,
+        buildingId: prow.building_id,
+        memberCount: (members ?? []).length,
+        recipientCount: userIds.length,
+      });
 
       if (prow.type === "poll") {
         await sendToUsers(
