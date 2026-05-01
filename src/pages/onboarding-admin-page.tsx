@@ -79,7 +79,7 @@ const STEPS = [
     inputType: 'text',
     autoComplete: 'off',
   },
-] as const satisfies readonly StepConfig[]
+] satisfies StepConfig[]
 
 const SUMMARY_META: { field: StepField; icon: LucideIcon; summaryLabel: string }[] = [
   { field: 'street', icon: MapPin, summaryLabel: 'שם הרחוב' },
