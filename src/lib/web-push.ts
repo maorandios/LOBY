@@ -189,7 +189,7 @@ export async function subscribeAndSave(
 
   // Subscribe requires an active worker; on mobile first install can lag behind register().
   try {
-    await registration.ready
+    await navigator.serviceWorker.ready
   } catch (e) {
     console.error('[LOBY] service worker ready', e)
     return { ok: false, message: 'לא ניתן להפעיל את ה-service worker' }
