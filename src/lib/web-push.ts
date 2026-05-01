@@ -196,17 +196,67 @@ export async function subscribeAndSave(
   }
 
   const keyMaterial = urlBase64ToUint8Array(vapid)
-  let sub: PushSubscription
-  try {
-    sub = await registration.pushManager.subscribe({
+
+  async function doSubscribe(): Promise<PushSubscription> {
+    return registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: keyMaterial as unknown as BufferSource,
     })
+  }
+
+  let sub: PushSubscription
+  try {
+    sub = await doSubscribe()
   } catch (e) {
-    console.error('[LOBY] pushManager.subscribe', e)
-    const msg =
-      e instanceof Error ? e.message : 'הדפדפן לא הצליח ליצור מנוי פוש'
-    return { ok: false, message: msg }
+    const msg = e instanceof Error ? e.message : String(e)
+    const isVapidKeyMismatch =
+      /applicationServerKey|does not match.*subscription/i.test(msg) ||
+      (typeof DOMException !== 'undefined' &&
+        e instanceof DOMException &&
+        e.name === 'InvalidAccessError')
+
+    if (!isVapidKeyMismatch) {
+      console.error('[LOBY] pushManager.subscribe', e)
+      return {
+        ok: false,
+        message:
+          e instanceof Error
+            ? e.message
+            : 'הדפדפן לא הצליח ליצור מנוי פוש',
+      }
+    }
+
+    // Subscription was created with a different VAPID key (env change / key rotation). Drop it and retry.
+    const existing = await registration.pushManager.getSubscription()
+    if (existing) {
+      const oldEndpoint = existing.endpoint
+      try {
+        await existing.unsubscribe()
+      } catch (unsubErr) {
+        console.error('[LOBY] push unsubscribe before VAPID resubscribe', unsubErr)
+      }
+      const { error: delErr } = await supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('endpoint', oldEndpoint)
+      if (delErr) {
+        console.error('[LOBY] push_subscriptions delete stale endpoint', delErr)
+      }
+    }
+
+    try {
+      sub = await doSubscribe()
+    } catch (e2) {
+      console.error('[LOBY] pushManager.subscribe (after VAPID reset)', e2)
+      return {
+        ok: false,
+        message:
+          e2 instanceof Error
+            ? e2.message
+            : 'הדפדפן לא הצליח ליצור מנוי פוש',
+      }
+    }
   }
 
   const json = sub.toJSON() as Record<string, unknown>
