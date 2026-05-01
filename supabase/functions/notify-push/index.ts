@@ -297,6 +297,13 @@ Deno.serve(async (req: Request) => {
       const postAuthor = post.author_id as string | null;
       const commentAuthor = comment.author_id as string;
 
+      console.log("[notify-push] comment_insert", {
+        postId: comment.post_id,
+        postAuthor,
+        commentAuthor,
+        buildingId: post.building_id,
+      });
+
       if (postAuthor && postAuthor === commentAuthor) {
         return new Response(JSON.stringify({ ok: true, skipped: true }), {
           status: 200,
@@ -309,6 +316,27 @@ Deno.serve(async (req: Request) => {
           url: postUrl(comment.post_id as string, appOrigin),
           postId: comment.post_id as string,
         });
+      } else {
+        // Anonymous posts do not store author_id — notify other building members (except commenter).
+        const { data: members } = await sb.from("building_members").select(
+          "user_id",
+        ).eq("building_id", post.building_id as string);
+
+        const userIds = (members ?? [])
+          .map((m: { user_id: string }) => m.user_id)
+          .filter((uid: string) => uid !== commentAuthor);
+
+        await sendToUsers(
+          sb,
+          userIds,
+          post.building_id as string,
+          "תגובה חדשה בפוסט אנונימי בבניין",
+          "פתחו לצפייה בהודעות",
+          {
+            url: postUrl(comment.post_id as string, appOrigin),
+            postId: comment.post_id as string,
+          },
+        );
       }
 
       return new Response(JSON.stringify({ ok: true }), {
