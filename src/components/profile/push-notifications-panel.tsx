@@ -7,6 +7,8 @@ import { isSupabaseConfigured } from '@/lib/supabase'
 import {
   ensureServiceWorker,
   getVapidPublicKey,
+  isAppleMobileDevice,
+  isStandalonePwa,
   isWebPushSupported,
   loadPushSubscriptionState,
   subscribeAndSave,
@@ -117,7 +119,7 @@ export function PushNotificationsPanel() {
       setUi('no_building')
       return
     }
-    const { permission, hasDbRow } = await loadPushSubscriptionState()
+    const { permission, hasDbRow } = await loadPushSubscriptionState(member.building_id)
     if (permission === 'denied') {
       setUi('blocked')
       return
@@ -261,6 +263,18 @@ export function PushNotificationsPanel() {
       </div>
 
       <p className={BODY}>{descriptionBody}</p>
+
+      {isAppleMobileDevice() && !isStandalonePwa() ? (
+        <p
+          className="mt-3 rounded-xl border border-[#ca8a04]/40 bg-[#fffbeb] px-3 py-2.5 text-start text-[0.8125rem] font-medium leading-relaxed text-[#713f12]"
+          role="note"
+        >
+          ב־iPhone וב־iPad התראות Web Push בדרך כלל{' '}
+          <strong className="font-semibold">לא מגיעות מטאב רגיל בספארי</strong>. הוסיפו את האתר למסך הבית
+          (שיתוף → &quot;הוסף למסך הבית&quot;) ופתחו את האפליקציה משם (iOS 16.4 ומעלה). אחרת הרשאה ו&quot;פוש
+          מופעל&quot; יכולים לשמור מנוי במסד, אבל Apple לא ישגרו התראה.
+        </p>
+      ) : null}
 
       {note ? (
         <p

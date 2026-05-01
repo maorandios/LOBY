@@ -78,7 +78,9 @@ export async function ensureServiceWorker(): Promise<ServiceWorkerRegistration |
   }
 }
 
-export async function loadPushSubscriptionState(): Promise<{
+export async function loadPushSubscriptionState(
+  buildingId: string | null
+): Promise<{
   permission: NotificationPermission
   hasDbRow: boolean
 }> {
@@ -86,13 +88,14 @@ export async function loadPushSubscriptionState(): Promise<{
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user?.id) {
+  if (!user?.id || !buildingId) {
     return { permission, hasDbRow: false }
   }
   const { data, error } = await supabase
     .from('push_subscriptions')
     .select('id')
     .eq('user_id', user.id)
+    .eq('building_id', buildingId)
     .limit(1)
   if (error) {
     console.error('[LOBY] push_subscriptions', error)

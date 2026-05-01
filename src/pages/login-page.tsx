@@ -33,9 +33,9 @@ function otpChars(otp: string): string[] {
   return Array.from({ length: OTP_LENGTH }, (_, i) => raw[i] ?? '')
 }
 
-/** ~1.25× smaller than h-12/w-11; tight gaps so 8 cells + hyphen fit one row on narrow phones. */
+/** iOS Safari zooms focused inputs if font-size < 16px — keep text-base (1rem) on small screens. */
 const otpDigitInputClass =
-  'h-[2.35rem] w-[2rem] shrink-0 rounded-lg border border-[#d4d4d8] bg-white text-center text-[0.9375rem] font-semibold tabular-nums text-[#18181b] outline-none transition-[box-shadow,border-color] focus-visible:border-[#a1a1aa] focus-visible:ring-2 focus-visible:ring-[#d4d4d8] disabled:cursor-not-allowed disabled:opacity-50 sm:h-[2.5rem] sm:w-[2.4rem] sm:rounded-2xl sm:text-[1.0625rem]'
+  'h-[2.5rem] w-[2rem] shrink-0 rounded-lg border border-[#d4d4d8] bg-white text-center text-base font-semibold tabular-nums text-[#18181b] outline-none transition-[box-shadow,border-color] focus-visible:border-[#a1a1aa] focus-visible:ring-2 focus-visible:ring-[#d4d4d8] disabled:cursor-not-allowed disabled:opacity-50 sm:h-[2.5rem] sm:w-[2.4rem] sm:rounded-2xl sm:text-[1.0625rem]'
 
 const LOGIN_PURPLE_PRIMARY =
   'h-12 w-full rounded-full touch-manipulation border-transparent bg-[#5E00FF] px-6 text-base font-semibold text-white shadow-none hover:bg-[#5200e6] focus-visible:border-[#5E00FF]/50 focus-visible:ring-[#5E00FF]/35 dark:hover:bg-[#5200e6]'
