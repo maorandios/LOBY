@@ -1,17 +1,34 @@
+import { useEffect, useState } from 'react'
 import {
-  BadgeCheck,
   ChartSpline,
+  CircleCheck,
   ShieldCog,
   TableProperties,
   UserRoundPlus,
 } from 'lucide-react'
 
-import { AdminMenuChoiceRow } from '@/components/admin/admin-menu-choice-row'
+import {
+  AdminMenuActionRow,
+  AdminMenuChoiceRow,
+} from '@/components/admin/admin-menu-choice-row'
 import { BuildingAdminHubHeader } from '@/components/admin/building-admin-hub-header'
+import { typeBadgeClass } from '@/components/feed/post-type-styles'
+import { cn } from '@/lib/utils'
 
 import { BUILDING_ADMIN_SHELL } from './building-admin-layout'
 
+const POLL_CHIP_SURFACE =
+  'inline-flex max-w-full items-center rounded-full px-[0.425rem] py-[5px] text-[0.595rem] font-semibold tracking-tight'
+
 export function BuildingAdminHubPage() {
+  const [statsDevToastOpen, setStatsDevToastOpen] = useState(false)
+
+  useEffect(() => {
+    if (!statsDevToastOpen) return
+    const id = window.setTimeout(() => setStatsDevToastOpen(false), 2600)
+    return () => window.clearTimeout(id)
+  }, [statsDevToastOpen])
+
   return (
     <div className={BUILDING_ADMIN_SHELL} dir="rtl">
       <BuildingAdminHubHeader />
@@ -29,24 +46,41 @@ export function BuildingAdminHubPage() {
           subtitle="ניהול דיירים והרשאות ועד בית"
         />
         <AdminMenuChoiceRow
-          to="/building/pending"
-          icon={BadgeCheck}
-          title="דיירים ממתינים לאישור"
-          subtitle="אשרו דיירים שביקשו להצטרף לבניין"
-        />
-        <AdminMenuChoiceRow
           to="/building/invite"
           icon={UserRoundPlus}
           title="הזמנת דיירים חדשים"
           subtitle="שתפו את הקישור ייחודי לצירוף דיירים חדשים"
         />
-        <AdminMenuChoiceRow
-          to="/building/stats"
+        <AdminMenuActionRow
           icon={ChartSpline}
           title="סטטיסטיקות"
           subtitle="תצוגת מנהלים של פעילות הבניין"
+          onClick={() => setStatsDevToastOpen(true)}
+          trailingChip={
+            <span className={cn(POLL_CHIP_SURFACE, typeBadgeClass('הצבעה'))}>בפיתוח</span>
+          }
         />
       </div>
+
+      {statsDevToastOpen ? (
+        <div
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+          role="status"
+          aria-live="polite"
+        >
+          <div
+            dir="rtl"
+            className="flex max-w-md items-center gap-2.5 rounded-full bg-zinc-800 px-5 py-3.5 text-white shadow-lg dark:bg-zinc-700"
+          >
+            <CircleCheck
+              className="size-5 shrink-0 text-white"
+              strokeWidth={2}
+              aria-hidden
+            />
+            <span className="text-sm font-medium leading-snug text-white">נמצא בפיתוח</span>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

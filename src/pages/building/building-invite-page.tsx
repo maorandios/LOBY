@@ -1,15 +1,8 @@
-import { useMemo } from 'react'
-import { Copy, Share2, UserRoundPlus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { CircleCheck, Copy, MessageCircleCheck, UserRoundPlus } from 'lucide-react'
 
+import { AdminMenuActionRow } from '@/components/admin/admin-menu-choice-row'
 import { BuildingAdminSectionHeader } from '@/components/admin/building-admin-section-header'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { BuildingAdminPageLoader } from '@/components/ui/full-screen-loading'
 import { useBuildingAdminData } from '@/hooks/use-building-admin-data'
 
@@ -18,8 +11,20 @@ import { BUILDING_ADMIN_SHELL } from './building-admin-layout'
 const WA_INTRO =
   'הצטרפו לאפליקציית הבניין שלנו דרך הקישור הבא:'
 
+const INTRO_COPY =
+  'הזמינו דיירים להצטרף, שלחו להם את הקישור באמצעות העתקה או שליחה ישירה דרך הוואטצאפ'
+
+const COPY_SUBTITLE =
+  'לחצו כדי להעתיק את הלינק להצטרפות ושלחו לדיריים'
+
+const SHARE_SUBTITLE =
+  'לחצו כדי לשלוח את לינק ההצטרפות ישירות דרך הוואטצאפ'
+
+const SHARE_TITLE = 'שיתוף בוואטצאפ'
+
 export function BuildingInviteResidentsPage() {
   const { inviteCode, loading, loadError } = useBuildingAdminData()
+  const [copyToastOpen, setCopyToastOpen] = useState(false)
 
   const inviteUrl = useMemo(() => {
     if (!inviteCode || typeof window === 'undefined') return null
@@ -27,6 +32,22 @@ export function BuildingInviteResidentsPage() {
   }, [inviteCode])
 
   const showCopy = inviteUrl !== null && inviteUrl.length > 0
+
+  useEffect(() => {
+    if (!copyToastOpen) return
+    const id = window.setTimeout(() => setCopyToastOpen(false), 2600)
+    return () => window.clearTimeout(id)
+  }, [copyToastOpen])
+
+  async function copyLink() {
+    if (!inviteUrl) return
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setCopyToastOpen(true)
+    } catch {
+      /* ignore */
+    }
+  }
 
   function shareWhatsApp() {
     if (!inviteUrl) return
@@ -41,45 +62,56 @@ export function BuildingInviteResidentsPage() {
       {loading ? (
         <BuildingAdminPageLoader />
       ) : (
-        <div className="mx-auto w-full max-w-lg px-4 pb-8">
+        <div className="mx-auto w-full max-w-lg px-4 pb-8 pt-6">
           {loadError ? (
             <p className="mb-4 text-sm text-destructive">{loadError}</p>
           ) : null}
-          <Card className="border-border/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
-            <CardHeader className="text-right">
-              <CardTitle className="text-base">קישור הצטרפות</CardTitle>
-              <CardDescription className="break-all font-mono text-xs" dir="ltr">
-                {showCopy ? inviteUrl : 'לא נמצא קוד הזמנה.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 w-full rounded-xl font-semibold"
-                disabled={!showCopy}
-                onClick={() =>
-                  showCopy &&
-                  void navigator.clipboard.writeText(inviteUrl).catch(() => {})
-                }
-              >
-                <Copy className="size-4" aria-hidden />
-                העתק קישור
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="h-11 w-full rounded-xl font-semibold"
-                disabled={!showCopy}
-                onClick={() => shareWhatsApp()}
-              >
-                <Share2 className="size-4" aria-hidden />
-                שתף בוואטסאפ
-              </Button>
-            </CardContent>
-          </Card>
+
+          <p className="mb-8 text-sm font-medium leading-relaxed text-pretty text-muted-foreground">
+            {INTRO_COPY}
+          </p>
+
+          <div className="mt-2 flex flex-col gap-2">
+            <AdminMenuActionRow
+              title="העתק קישור"
+              subtitle={COPY_SUBTITLE}
+              icon={Copy}
+              disabled={!showCopy}
+              onClick={() => void copyLink()}
+            />
+            <AdminMenuActionRow
+              title={SHARE_TITLE}
+              subtitle={SHARE_SUBTITLE}
+              icon={MessageCircleCheck}
+              variant="whatsappInvite"
+              disabled={!showCopy}
+              onClick={() => shareWhatsApp()}
+            />
+          </div>
         </div>
       )}
+
+      {copyToastOpen ? (
+        <div
+          className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+          role="status"
+          aria-live="polite"
+        >
+          <div
+            dir="rtl"
+            className="flex max-w-md items-center gap-2.5 rounded-full bg-zinc-800 px-5 py-3.5 text-white shadow-lg dark:bg-zinc-700"
+          >
+            <CircleCheck
+              className="size-5 shrink-0 text-white"
+              strokeWidth={2}
+              aria-hidden
+            />
+            <span className="text-sm font-medium leading-snug text-white">
+              הלינק הועתק
+            </span>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

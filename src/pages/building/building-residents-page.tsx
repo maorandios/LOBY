@@ -23,9 +23,9 @@ const CARD_SURFACE = cn(
 /** Label ~0.625rem × 1.25 */
 const METRIC_LABEL =
   'text-[0.78125rem] font-semibold leading-tight text-muted-foreground sm:text-[0.859375rem]'
-/** Value ~2.25rem × 2 */
+/** Value: previous size ÷ 1.25, regular weight */
 const METRIC_VALUE =
-  'text-center text-[4.5rem] font-bold tabular-nums leading-none tracking-tight text-foreground sm:text-[4.75rem]'
+  'text-center text-[3.6rem] font-normal tabular-nums leading-none tracking-tight text-foreground sm:text-[3.8rem]'
 
 function apartmentSortKey(raw: string | null): { num: number; rest: string } {
   const s = (raw ?? '').trim()

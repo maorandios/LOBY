@@ -12,7 +12,6 @@ import { PostDetailPage } from '@/pages/post-detail-page'
 import { BuildingAdminHubPage } from '@/pages/building/building-admin-hub-page'
 import { BuildingAdminLayout } from '@/pages/building/building-admin-layout'
 import { BuildingInviteResidentsPage } from '@/pages/building/building-invite-page'
-import { BuildingPendingApprovalsPage } from '@/pages/building/building-pending-page'
 import { BuildingResidentsPage } from '@/pages/building/building-residents-page'
 import { BuildingSettingsPage } from '@/pages/building/building-settings-page'
 import { BuildingStatsPage } from '@/pages/building/building-stats-page'
@@ -49,7 +48,6 @@ export default function App() {
               <Route index element={<BuildingAdminHubPage />} />
               <Route path="settings" element={<BuildingSettingsPage />} />
               <Route path="residents" element={<BuildingResidentsPage />} />
-              <Route path="pending" element={<BuildingPendingApprovalsPage />} />
               <Route path="invite" element={<BuildingInviteResidentsPage />} />
               <Route path="stats" element={<BuildingStatsPage />} />
             </Route>

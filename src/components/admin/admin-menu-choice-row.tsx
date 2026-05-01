@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { MoveLeft, type LucideIcon } from 'lucide-react'
 
@@ -15,7 +16,7 @@ const MENU_ROW =
 
 const MENU_ICON_STROKE = 2 as const
 
-type Props = {
+type LinkProps = {
   to: string
   title: string
   subtitle: string
@@ -23,7 +24,7 @@ type Props = {
 }
 
 /** White card row — RTL menu + gray tray (create-post / profile logout style). */
-export function AdminMenuChoiceRow({ to, title, subtitle, icon: Icon }: Props) {
+export function AdminMenuChoiceRow({ to, title, subtitle, icon: Icon }: LinkProps) {
   return (
     <Link
       to={to}
@@ -50,5 +51,93 @@ export function AdminMenuChoiceRow({ to, title, subtitle, icon: Icon }: Props) {
         aria-hidden
       />
     </Link>
+  )
+}
+
+type ActionProps = {
+  title: string
+  subtitle: string
+  icon: LucideIcon
+  disabled?: boolean
+  onClick: () => void
+  /** Teal invite row (WhatsApp-style) — bg #E4FFF6, border/text/icon #00766C. */
+  variant?: 'default' | 'whatsappInvite'
+  /** Rendered beside the chevron (e.g. type chip). */
+  trailingChip?: ReactNode
+}
+
+/** Same surface as {@link AdminMenuChoiceRow}, for in-page actions (not navigation). */
+export function AdminMenuActionRow({
+  title,
+  subtitle,
+  icon: Icon,
+  disabled = false,
+  onClick,
+  variant = 'default',
+  trailingChip,
+}: ActionProps) {
+  const isWa = variant === 'whatsappInvite'
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        buttonVariants({ variant: 'ghost' }),
+        MENU_ROW,
+        'h-auto w-full max-w-none font-normal disabled:pointer-events-none disabled:opacity-45',
+        isWa &&
+          'border-[#00766C] bg-[#E4FFF6] hover:bg-[#dbf6ee] dark:border-[#00766C] dark:bg-[#E4FFF6] dark:hover:bg-[#dbf6ee]',
+      )}
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span
+          className={cn(
+            NEUTRAL_ICON_TRAY,
+            isWa &&
+              'border-[#00766C] bg-[#E4FFF6] dark:border-[#00766C] dark:bg-[#E4FFF6]',
+          )}
+          aria-hidden
+        >
+          <Icon
+            className={cn(
+              TRAY_ICON,
+              isWa && 'text-[#00766C] dark:text-[#00766C]',
+            )}
+            strokeWidth={MENU_ICON_STROKE}
+          />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-start">
+          <span
+            className={cn(
+              'text-base font-semibold',
+              isWa ? 'text-[#00766C]' : 'text-foreground',
+            )}
+          >
+            {title}
+          </span>
+          <span
+            className={cn(
+              'text-[0.8rem] font-normal leading-snug',
+              isWa ? 'text-[#00766C]/90' : 'text-muted-foreground',
+            )}
+          >
+            {subtitle}
+          </span>
+        </span>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {trailingChip}
+        <MoveLeft
+          className={cn(
+            'size-5 shrink-0',
+            isWa ? 'text-[#00766C]' : 'text-muted-foreground',
+          )}
+          strokeWidth={MENU_ICON_STROKE}
+          aria-hidden
+        />
+      </div>
+    </button>
   )
 }
