@@ -4,9 +4,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/auth/use-auth'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { PushNotificationsPanel } from '@/components/profile/push-notifications-panel'
+import { ProfileDeleteAccountSection } from '@/components/profile/profile-delete-account-section'
 import { ProfileUserSettingsCard } from '@/components/profile/profile-user-settings-card'
 import { POST_CREATE_BUTTON_HEX } from '@/components/feed/post-type-styles'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
 /** Match {@link BottomTabBar} / post-detail bottom strips. */
@@ -119,6 +121,12 @@ export function ProfilePage() {
         <div className="mt-4">
           <PushNotificationsPanel />
         </div>
+
+        {isSupabaseConfigured() ? (
+          <div className="mt-4">
+            <ProfileDeleteAccountSection />
+          </div>
+        ) : null}
       </main>
 
       <div className={cn('fixed inset-x-0 bottom-0 z-40', PROFILE_BOTTOM_BAR_CHROME)}>

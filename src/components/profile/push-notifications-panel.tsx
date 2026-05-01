@@ -1,5 +1,5 @@
 import { BellRing, Loader2 } from 'lucide-react'
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { cn } from '@/lib/utils'
@@ -7,7 +7,6 @@ import { isSupabaseConfigured } from '@/lib/supabase'
 import {
   ensureServiceWorker,
   getVapidPublicKey,
-  isAppleMobileDevice,
   isWebPushSupported,
   loadPushSubscriptionState,
   subscribeAndSave,
@@ -21,19 +20,20 @@ const TITLE =
 const BODY =
   'mt-2 text-[0.8125rem] font-medium leading-relaxed text-pretty text-muted-foreground'
 
-const ICON_WRAP = 'flex h-5 w-10 shrink-0 items-center justify-center text-muted-foreground'
-
 const SECTION_SHELL = 'px-4 py-5'
 
 /** Brand “on” color for push toggle */
 const PUSH_ON = '#5E00FF'
 
+/** Shown when push cannot work on this environment (browser, OS version, deployment, …). */
+const PUSH_UNAVAILABLE_MSG =
+  'המכשיר שלך אינו תומך בקבלת הודעת פוש'
+
 type UiState =
   | 'loading'
-  | 'unsupported'
-  | 'unsupported_ios'
+  /** Web Push / VAPID / environment unavailable — show {@link PUSH_UNAVAILABLE_MSG} only. */
+  | 'push_unavailable'
   | 'no_supabase'
-  | 'need_vapid'
   | 'no_building'
   | 'blocked'
   | 'inactive'
@@ -93,31 +93,6 @@ function NotificationSwitch({
   )
 }
 
-function PanelSection({
-  title,
-  children,
-  showIcon,
-}: {
-  title: string
-  children: ReactNode
-  showIcon?: boolean
-}) {
-  return (
-    <section dir="rtl" lang="he" className={SECTION_SHELL}>
-      <div className="flex flex-row items-center gap-2 pb-1 sm:gap-3">
-        {showIcon ? (
-          <span className={ICON_WRAP} aria-hidden>
-            <BellRing className="size-[1.125rem] text-muted-foreground" strokeWidth={2} />
-          </span>
-        ) : null}
-        <div className="min-w-0 flex-1 text-start">
-          <h2 className={TITLE}>{title}</h2>
-        </div>
-      </div>
-      {children}
-    </section>
-  )
-}
 
 export function PushNotificationsPanel() {
   const { member, loading: memberLoading } = useBuildingMembership()
@@ -131,11 +106,11 @@ export function PushNotificationsPanel() {
       return
     }
     if (!isWebPushSupported()) {
-      setUi(isAppleMobileDevice() ? 'unsupported_ios' : 'unsupported')
+      setUi('push_unavailable')
       return
     }
     if (!getVapidPublicKey()) {
-      setUi('need_vapid')
+      setUi('push_unavailable')
       return
     }
     if (!member?.building_id) {
@@ -213,47 +188,32 @@ export function PushNotificationsPanel() {
     )
   }
 
-  if (ui === 'unsupported_ios') {
+  if (ui === 'push_unavailable') {
     return (
-      <PanelSection title="התראות דחיפה באייפון / אייפד" showIcon>
-        <div className={cn(BODY, 'space-y-3')}>
-          <p>
-            באייפון ובאייפד, התראות דחיפה מ־Safari זמינות רק כשפותחים את האפליקציה{' '}
-            <span className="font-semibold text-foreground">מהמסך הבית</span>{' '}
-            (לא מלשונית רגילה בדפדפן).
-          </p>
-          <ol className="list-decimal list-inside space-y-2 text-start [padding-inline-start:0.25rem]">
-            <li>דורש iOS 16.4 ומעלה.</li>
-            <li>ב־Safari: לחצו על כפתור השיתוף ↗ והוסיפו «הוסף למסך הבית».</li>
-            <li>
-              פתחו את <span className="font-medium text-foreground">לובי</span> מהסמל במסך הבית, לא
-              מ־Safari הרגיל.
-            </li>
-            <li>כאן בפרופיל — הפעילו שוב את ההתראות.</li>
-          </ol>
+      <section
+        aria-labelledby="push-unavailable-heading"
+        dir="rtl"
+        lang="he"
+        className={SECTION_SHELL}
+      >
+        <div className="flex flex-row items-center justify-start gap-2 pb-3 sm:gap-2.5">
+          <span
+            className="flex h-5 shrink-0 items-center justify-center text-muted-foreground"
+            aria-hidden
+          >
+            <BellRing className="size-[1.125rem] shrink-0" strokeWidth={2} />
+          </span>
+          <h2 id="push-unavailable-heading" className={cn(TITLE, 'min-w-0 text-start leading-tight')}>
+            התראות פוש
+          </h2>
         </div>
-      </PanelSection>
-    )
-  }
-
-  if (ui === 'unsupported') {
-    return (
-      <PanelSection title="התראות דחיפה" showIcon>
-        <p className={BODY}>הדפדפן או המכשיר לא תומכים בהתראות דחיפה.</p>
-      </PanelSection>
+        <p className={BODY}>{PUSH_UNAVAILABLE_MSG}</p>
+      </section>
     )
   }
 
   if (ui === 'no_supabase') {
     return null
-  }
-
-  if (ui === 'need_vapid') {
-    return (
-      <PanelSection title="התראות דחיפה" showIcon>
-        <p className={BODY}>השרת עדיין לא הוגדר למפתחות VAPID (VITE_VAPID_PUBLIC_KEY).</p>
-      </PanelSection>
-    )
   }
 
   if (ui === 'no_building') {

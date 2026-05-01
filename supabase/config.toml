@@ -3,3 +3,6 @@
 [functions.notify-push]
 # Internal hook from Postgres pg_net sends x-push-hook-secret; JWT verification would block dispatcher.
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true
