@@ -257,14 +257,23 @@ export function LoginPage() {
 
   return (
     <LoginShell>
-      <header className="flex flex-col gap-2 text-right">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          כניסה למערכת
-        </h1>
-        <p className="text-base leading-relaxed text-muted-foreground">
-          הזינו מייל ונשלח לכם קוד חד־פעמי להקלדה במסך הבא
-        </p>
-      </header>
+      <div className="flex flex-col gap-6 pt-8">
+        <div className="flex w-full justify-center px-2">
+          <img
+            src="/HABLOCKLOGO.svg"
+            alt="לוגו"
+            className="h-24 w-auto max-w-[min(100%,30rem)] object-contain object-center"
+            decoding="async"
+          />
+        </div>
+
+        <header className="flex flex-col gap-2 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">ברוכים הבאים</h1>
+          <p className="text-base leading-relaxed text-muted-foreground text-pretty">
+            הקימו את הבניין שלכם היום וצרו תקשורת שעובדת בין דיירי הבניין
+          </p>
+        </header>
+      </div>
 
       {!configured ? (
         <div className={calloutWarningClass} role="status">
@@ -297,7 +306,7 @@ export function LoginPage() {
       <form onSubmit={onSubmitEmail} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 text-right">
           <label htmlFor="auth-email" className="text-sm font-medium text-foreground">
-            דוא״ל
+            הזינו את כתובת הדוא״ל שלכם
           </label>
           <input
             id="auth-email"
@@ -306,11 +315,11 @@ export function LoginPage() {
             autoComplete="email"
             inputMode="email"
             dir="ltr"
-            placeholder="you@example.com"
+            placeholder="David@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading || !configured}
-            className="h-11 w-full rounded-lg border border-[#d4d4d8] bg-white px-3 text-base text-[#18181b] outline-none transition-[box-shadow,border-color] placeholder:text-[#71717a] focus-visible:border-[#a1a1aa] focus-visible:ring-2 focus-visible:ring-[#d4d4d8] disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-11 w-full rounded-lg border border-[#d4d4d8] bg-white px-3 text-right text-base text-[#18181b] outline-none transition-[box-shadow,border-color] placeholder:text-right placeholder:text-[#71717a] focus-visible:border-[#a1a1aa] focus-visible:ring-2 focus-visible:ring-[#d4d4d8] disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
 
@@ -323,9 +332,9 @@ export function LoginPage() {
         <Button
           type="submit"
           disabled={loading || !configured}
-          className="h-11 w-full touch-manipulation text-base font-semibold"
+          className="h-12 w-full rounded-full touch-manipulation border-transparent bg-[#5E00FF] px-6 text-base font-semibold text-white shadow-none hover:bg-[#5200e6] focus-visible:border-[#5E00FF]/50 focus-visible:ring-[#5E00FF]/35 dark:hover:bg-[#5200e6]"
         >
-          {loading ? 'שולחים…' : 'שלחו לי קוד בהודעה'}
+          {loading ? 'שולחים…' : 'להרשמה לחצו כאן'}
         </Button>
       </form>
     </LoginShell>
