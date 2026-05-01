@@ -3,7 +3,7 @@ import { postStatusDbToHe, postTypeDbToHe } from '@/lib/post-types'
 import type { BuildingMemberRole } from '@/types/building'
 import type { FeedPost, PollData, PostComment } from '@/types/feed'
 import { isPollPost } from '@/types/feed'
-import { isSupabaseConfigured, supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { normalizePhoneForWhatsApp } from '@/lib/whatsapp-phone'
 import { formatRelativeTimeHe } from '@/lib/format-relative-time-he'
 import type { FeedFilterId } from '@/types/feed'
@@ -24,27 +24,6 @@ export type PostRow = {
 }
 
 type CountAgg = { count: number }[]
-
-/** Named posts / all comments: invoke Edge after write so pushes work without relying on DB pg_net. */
-function invokeNotifyPushAfterWrite(
-  payload:
-    | { event: 'post_insert'; post_id: string }
-    | { event: 'comment_insert'; comment_id: string }
-) {
-  if (!isSupabaseConfigured()) return
-  void supabase.functions
-    .invoke('notify-push', { body: payload })
-    .then(({ data, error }) => {
-      if (error) {
-        console.warn('[LOBY] notify-push invoke FAILED', error.message, error)
-        return
-      }
-      console.info('[LOBY] notify-push invoke ok', payload.event, data)
-    })
-    .catch((e) => {
-      console.warn('[LOBY] notify-push invoke threw', e)
-    })
-}
 
 function countFromRel(rel: CountAgg | undefined | null): number {
   const n = rel?.[0]?.count
@@ -592,11 +571,6 @@ export async function insertComment(
     return null
   }
 
-  invokeNotifyPushAfterWrite({
-    event: 'comment_insert',
-    comment_id: data.id as string,
-  })
-
   const { data: postRow } = await supabase
     .from('posts')
     .select('building_id')
@@ -731,7 +705,6 @@ export async function createPost(payload: CreatePostPayload): Promise<{
       console.error('[LOBY] createPost poll_options', oErr)
       return { id: null, error: oErr.message }
     }
-    invokeNotifyPushAfterWrite({ event: 'post_insert', post_id: postId })
     return { id: postId }
   }
 
@@ -779,7 +752,6 @@ export async function createPost(payload: CreatePostPayload): Promise<{
     console.error('[LOBY] createPost', error)
     return { id: null, error: error?.message ?? 'יצירת פוסט נכשלה' }
   }
-  invokeNotifyPushAfterWrite({ event: 'post_insert', post_id: ins.id as string })
   return { id: ins.id as string }
 }
 
