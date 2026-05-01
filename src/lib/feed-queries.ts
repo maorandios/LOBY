@@ -34,8 +34,15 @@ function invokeNotifyPushAfterWrite(
   if (!isSupabaseConfigured()) return
   void supabase.functions
     .invoke('notify-push', { body: payload })
-    .then(({ error }) => {
-      if (error) console.warn('[LOBY] notify-push invoke', error.message)
+    .then(({ data, error }) => {
+      if (error) {
+        console.warn('[LOBY] notify-push invoke FAILED', error.message, error)
+        return
+      }
+      console.info('[LOBY] notify-push invoke ok', payload.event, data)
+    })
+    .catch((e) => {
+      console.warn('[LOBY] notify-push invoke threw', e)
     })
 }
 
