@@ -7,18 +7,17 @@ self.addEventListener('push', (event) => {
   } catch {
     parsed = {}
   }
-  const title = typeof parsed.title === 'string' ? parsed.title : 'לובי'
+  const title = typeof parsed.title === 'string' ? parsed.title : ''
   const body = typeof parsed.body === 'string' ? parsed.body : ''
   const data = parsed.data && typeof parsed.data === 'object' ? parsed.data : {}
 
+  /* Keep options minimal: extra fields can cause some OSes to add an app-name line
+     between title and body. No badge (often tied to app attribution on Android). */
   event.waitUntil(
-    self.registration.showNotification(title, {
+    self.registration.showNotification(title || ' ', {
       body,
       data,
       icon: '/192.png',
-      badge: '/192.png',
-      lang: 'he',
-      dir: 'rtl',
     })
   )
 })
