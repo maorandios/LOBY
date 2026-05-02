@@ -21,7 +21,7 @@ import {
   typeBadgeClass,
 } from '@/components/feed/post-type-styles'
 import { AuthorNameWithAdminBadge } from '@/components/feed/author-name-with-admin'
-import { StatusLabel, StatusMarker } from '@/components/feed/status-badge'
+import { postStatusDisplayText } from '@/components/feed/status-badge'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { insertComment } from '@/lib/feed-queries'
 import { cn } from '@/lib/utils'
@@ -42,6 +42,10 @@ type Props = {
     postId: string,
     optionId: string
   ) => Promise<{ ok: boolean; message?: string }>
+  onPollVoteChange?: (
+    postId: string,
+    optionId: string
+  ) => Promise<{ ok: boolean; message?: string }>
   isAdmin?: boolean
   onAdminSuccess?: () => void
   /** When set, after delete the parent runs this (e.g. navigate away). */
@@ -54,6 +58,7 @@ export function PostCard({
   post,
   variant = 'feed',
   onPollVote,
+  onPollVoteChange,
   isAdmin,
   onAdminSuccess,
   onAdminDelete,
@@ -135,17 +140,28 @@ export function PostCard({
   }
 
   const TypeIcon = postTypeLucideIcon[post.type]
+  const statusInChip = isReport || isPoll
 
   const typeChip = (
     <span
-      className={cn(CHIP, 'shrink-0 text-foreground', typeBadgeClass(post.type))}
+      className={cn(CHIP, 'shrink-0', typeBadgeClass(post.type))}
     >
       <TypeIcon
         className="size-[0.744rem] shrink-0 opacity-90"
         strokeWidth={1.75}
         aria-hidden
       />
-      {postTypeChipLabel(post.type)}
+      <span className="min-w-0 shrink">{postTypeChipLabel(post.type)}</span>
+      {statusInChip ? (
+        <>
+          <span aria-hidden className="opacity-45">
+            ·
+          </span>
+          <span className="min-w-0 shrink">
+            {postStatusDisplayText(post.status)}
+          </span>
+        </>
+      ) : null}
     </span>
   )
 
@@ -241,31 +257,11 @@ export function PostCard({
       </div>
 
       <div className="mt-7 flex flex-col gap-5">
-        {isReport || isPoll ? (
-          /**
-           * RTL flex: badge at inline-start (right); title in flex-1 so wrapped lines stay in the
-           * text column (hanging indent). items-start + slight padding-top aligns chip with first
-           * line cap height vs float, which sat above the text / could sit on its own line.
-           */
-          <div
-            dir="rtl"
-            className="flex min-w-0 flex-nowrap items-start gap-x-[5px]"
-          >
-            <div className="flex shrink-0 items-center gap-x-[5px] pt-[3px]">
-              <StatusLabel status={post.status} />
-              <StatusMarker status={post.status} />
-            </div>
-            <h2 className="min-w-0 flex-1 basis-0 text-start text-[1.06rem] leading-snug font-medium tracking-tight text-foreground">
-              {post.title}
-            </h2>
-          </div>
-        ) : (
-          <div>
-            <h2 className="text-[1.06rem] leading-snug font-medium tracking-tight text-foreground">
-              {post.title}
-            </h2>
-          </div>
-        )}
+        <div dir={isReport || isPoll ? 'rtl' : undefined}>
+          <h2 className="text-[1.06rem] leading-snug font-medium tracking-tight text-foreground">
+            {post.title}
+          </h2>
+        </div>
 
         {post.imageUrl ? (
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted">
@@ -290,6 +286,11 @@ export function PostCard({
               onVote={
                 onPollVote
                   ? (optionId) => onPollVote(post.id, optionId)
+                  : undefined
+              }
+              onChangeVote={
+                onPollVoteChange
+                  ? (optionId) => onPollVoteChange(post.id, optionId)
                   : undefined
               }
             />

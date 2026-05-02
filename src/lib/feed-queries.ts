@@ -614,6 +614,28 @@ export async function insertPollVote(
   return { ok: true }
 }
 
+export async function updatePollVote(
+  postId: string,
+  optionId: string
+): Promise<{ ok: boolean; message?: string }> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user?.id) return { ok: false, message: 'נדרשת התחברות' }
+
+  const { error } = await supabase
+    .from('poll_votes')
+    .update({ option_id: optionId })
+    .eq('post_id', postId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('[LOBY] updatePollVote', error)
+    return { ok: false, message: error.message }
+  }
+  return { ok: true }
+}
+
 export type CreatePostPayload = {
   buildingId: string
   /** When true, author_id is not stored — identity is not recoverable. */
@@ -797,6 +819,23 @@ export async function adminMarkPollDecided(
         poll_closed: true,
       })
       .eq('id', postId)
+      .eq('type', 'poll')
+  )
+}
+
+/** Re-open a closed poll — building admins only (RLS). Voting stays closed for residents who already voted (unique constraint). */
+export async function adminReopenPoll(
+  postId: string
+): Promise<{ ok: boolean; error?: string }> {
+  return adminPostResult(
+    await supabase
+      .from('posts')
+      .update({
+        status: 'open',
+        poll_closed: false,
+      })
+      .eq('id', postId)
+      .eq('type', 'poll')
   )
 }
 
@@ -847,6 +886,28 @@ export function mergePollVotes(
     poll: {
       ...post.poll,
       initialVoteOptionId: votedOptionId,
+      options: nextOptions,
+    },
+  }
+}
+
+export function mergePollVoteChange(
+  post: FeedPost,
+  fromOptionId: string,
+  toOptionId: string
+): FeedPost {
+  if (!isPollPost(post)) return post
+  if (fromOptionId === toOptionId) return post
+  const nextOptions = post.poll.options.map((o) => {
+    if (o.id === fromOptionId) return { ...o, votes: Math.max(0, o.votes - 1) }
+    if (o.id === toOptionId) return { ...o, votes: o.votes + 1 }
+    return o
+  })
+  return {
+    ...post,
+    poll: {
+      ...post.poll,
+      initialVoteOptionId: toOptionId,
       options: nextOptions,
     },
   }

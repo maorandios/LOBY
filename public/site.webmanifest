@@ -1,6 +1,6 @@
 {
-  "name": "לובי — תקשורת בניין",
-  "short_name": "לובי",
+  "name": "הלובי - תקשורת בין דיירים",
+  "short_name": "הלובי",
   "description": "לוח הודעות מובנה לדיירי הבניין",
   "lang": "he",
   "dir": "rtl",
@@ -11,9 +11,27 @@
   "theme_color": "#f6f6f6",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/thefavicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

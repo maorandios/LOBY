@@ -18,11 +18,13 @@ import {
   fetchPostById,
   insertComment,
   insertPollVote,
+  mergePollVoteChange,
+  updatePollVote,
 } from '@/lib/feed-queries'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { useAuth } from '@/auth/use-auth'
 import { cn } from '@/lib/utils'
-import type { FeedPost, PostComment } from '@/types/feed'
+import { isPollPost, type FeedPost, type PostComment } from '@/types/feed'
 
 /** Match {@link BottomTabBar} nav strip (no FAB). */
 const DETAIL_COMMENT_BAR_CHROME =
@@ -88,6 +90,17 @@ export function PostDetailPage() {
       const fresh = await fetchPostById(postId)
       if (fresh) setPost(fresh)
     }
+    return res
+  }
+
+  async function handlePollVoteChange(pid: string, optionId: string) {
+    const res = await updatePollVote(pid, optionId)
+    if (!res.ok) return res
+    setPost((p) => {
+      if (!p || p.id !== pid || !isPollPost(p)) return p
+      const from = p.poll.initialVoteOptionId
+      return from ? mergePollVoteChange(p, from, optionId) : p
+    })
     return res
   }
 
@@ -189,6 +202,7 @@ export function PostDetailPage() {
                     variant="detail"
                     post={post}
                     onPollVote={handlePollVote}
+                    onPollVoteChange={handlePollVoteChange}
                     isAdmin={isAdmin}
                     onAdminSuccess={() => void reload()}
                     onAdminDelete={() => navigate('/feed', { replace: true })}
@@ -199,6 +213,7 @@ export function PostDetailPage() {
                   variant="detail"
                   post={post}
                   onPollVote={handlePollVote}
+                  onPollVoteChange={handlePollVoteChange}
                   isAdmin={isAdmin}
                   onAdminSuccess={() => void reload()}
                   onAdminDelete={() => navigate('/feed', { replace: true })}

@@ -310,7 +310,7 @@ export function LoginPage() {
         <div className="flex flex-col gap-6 pt-8">
           <div className="flex w-full justify-center px-2">
             <img
-              src="/HABLOCKLOGO.svg"
+              src="/LobyIcon.svg"
               alt="לוגו"
               className="h-24 w-auto max-w-[min(100%,30rem)] object-contain object-center"
               decoding="async"
@@ -364,7 +364,7 @@ export function LoginPage() {
       <div className="flex flex-col gap-6 pt-8">
         <div className="flex w-full justify-center px-2">
           <img
-            src="/HABLOCKLOGO.svg"
+            src="/LobyIcon.svg"
             alt="לוגו"
             className="h-24 w-auto max-w-[min(100%,30rem)] object-contain object-center"
             decoding="async"
@@ -446,7 +446,7 @@ export function LoginPage() {
           disabled={loading || !configured}
           className={LOGIN_PURPLE_PRIMARY}
         >
-          {loading ? 'שולחים…' : 'להרשמה לחצו כאן'}
+          {loading ? 'שולחים…' : 'לחצו כאן להתחברות'}
         </Button>
       </form>
     </LoginShell>

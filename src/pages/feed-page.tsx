@@ -23,7 +23,9 @@ import {
   fetchFeedPostsForBuilding,
   insertPollVote,
   mergeCommentIntoRecentPreview,
+  mergePollVoteChange,
   mergePollVotes,
+  updatePollVote,
 } from '@/lib/feed-queries'
 import {
   getCachedBuildingLabel,
@@ -33,7 +35,7 @@ import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { useFeedSentinelLoadMore } from '@/hooks/use-feed-sentinel-load-more'
 import { cn } from '@/lib/utils'
-import type { FeedPost, PostComment } from '@/types/feed'
+import { isPollPost, type FeedPost, type PostComment } from '@/types/feed'
 
 type FeedLocationState = { newInviteCode?: string }
 
@@ -238,6 +240,23 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
           prev.map((p) =>
             p.id === postId ? mergePollVotes(p, optionId) : p
           )
+        )
+      }
+      return res
+    },
+    []
+  )
+
+  const handlePollVoteChange = useCallback(
+    async (postId: string, optionId: string) => {
+      const res = await updatePollVote(postId, optionId)
+      if (res.ok) {
+        setPosts((prev) =>
+          prev.map((p) => {
+            if (p.id !== postId || !isPollPost(p)) return p
+            const from = p.poll.initialVoteOptionId
+            return from ? mergePollVoteChange(p, from, optionId) : p
+          })
         )
       }
       return res
@@ -477,6 +496,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
                       <PostCard
                         post={post}
                         onPollVote={handlePollVote}
+                        onPollVoteChange={handlePollVoteChange}
                         isAdmin={isAdmin}
                         onAdminSuccess={() => void loadFeed({ silent: true })}
                         onCommentPosted={afterInlineComment}

@@ -333,7 +333,7 @@ export function OnboardingAdminPage() {
   const logoBlock = (
     <div className="flex w-full justify-center px-2">
       <img
-        src="/HABLOCKLOGO.svg"
+        src="/LobyIcon.svg"
         alt="לוגו"
         className="h-24 w-auto max-w-[min(100%,30rem)] object-contain object-center"
         decoding="async"

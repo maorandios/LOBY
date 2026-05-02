@@ -20,6 +20,7 @@ import { AdminBadgeCheck } from '@/components/admin/admin-badge-check'
 import {
   adminDeletePost,
   adminMarkPollDecided,
+  adminReopenPoll,
   adminSetPostPinned,
   adminUpdateReportPostStatus,
 } from '@/lib/feed-queries'
@@ -196,8 +197,11 @@ export function PostAdminSheet({
   const isPoll = isPollPost(post)
   const isReport = post.type === 'דיווח'
 
-  const pollDecided =
-    isPoll && (post.poll.isClosed || post.status === 'הוחלט')
+  /** סקר סגור (תוצאות / סיום הצבעה) — לא כולל סקר מבוטל */
+  const pollIsEnded =
+    isPoll &&
+    !post.poll.isCancelled &&
+    (post.poll.isClosed || post.status === 'הוחלט' || post.status === 'נסגר')
 
   const busyKeyRef = useRef(busyKey)
   busyKeyRef.current = busyKey
@@ -344,8 +348,7 @@ export function PostAdminSheet({
   const trayDeleteChip = postTypeChipIconTrayClass('דיווח')
 
   const statusSectionVisible =
-    isReport ||
-    (isPoll && !pollDecided)
+    isReport || (isPoll && !post.poll.isCancelled)
 
   return createPortal(
     <div
@@ -460,20 +463,36 @@ export function PostAdminSheet({
                         />
                       </>
                     ) : null}
-                    {isPoll && !pollDecided ? (
-                      <AdminActionCard
-                        icon={ShieldCheck}
-                        trayClassName={NEUTRAL_TRAY_GRAY}
-                        title="סגור"
-                        subtitle="סיום הסקר והצגת התוצאות ללא יכולת להצביע שוב"
-                        loading={busyKey === 'decided'}
-                        disabled={disabled}
-                        onClick={() =>
-                          void wrap('decided', () =>
-                            adminMarkPollDecided(post.id)
-                          )
-                        }
-                      />
+                    {isPoll ? (
+                      pollIsEnded ? (
+                        <AdminActionCard
+                          icon={CircleDot}
+                          trayClassName={NEUTRAL_TRAY_GRAY}
+                          title="פתיחת סקר שוב"
+                          subtitle="ניתן יהיה להצביע לסקר על ידי דיירי הבניין"
+                          loading={busyKey === 'pollReopen'}
+                          disabled={disabled}
+                          onClick={() =>
+                            void wrap('pollReopen', () =>
+                              adminReopenPoll(post.id)
+                            )
+                          }
+                        />
+                      ) : (
+                        <AdminActionCard
+                          icon={ShieldCheck}
+                          trayClassName={NEUTRAL_TRAY_GRAY}
+                          title="סגור"
+                          subtitle="סיום הסקר והצגת תוצאות סופיות"
+                          loading={busyKey === 'decided'}
+                          disabled={disabled}
+                          onClick={() =>
+                            void wrap('decided', () =>
+                              adminMarkPollDecided(post.id)
+                            )
+                          }
+                        />
+                      )
                     ) : null}
                   </SectionShell>
                 ) : null}
