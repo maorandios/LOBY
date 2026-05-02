@@ -53,6 +53,23 @@ function postUrl(postId: string, origin: string): string {
   return `${origin.replace(/\/$/, "")}/post/${postId}`;
 }
 
+async function memberDisplayName(
+  sb: Supabase,
+  buildingId: string,
+  userId: string | null,
+): Promise<string> {
+  if (!userId) return "דייר אנונימי";
+  const { data, error } = await sb
+    .from("building_members")
+    .select("full_name")
+    .eq("building_id", buildingId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error || !data) return "משתמש";
+  const name = typeof data.full_name === "string" ? data.full_name.trim() : "";
+  return name.length > 0 ? name : "משתמש";
+}
+
 async function removeDeadSubscription(
   sb: Supabase,
   id: string,
@@ -316,11 +333,11 @@ Deno.serve(async (req: Request) => {
       if (!postId) throw new Error("post_id");
 
       const { data: post, error: pErr } = await sb.from("posts").select(
-        "id, building_id, author_id, type, status, title, pinned",
+        "id, building_id, author_id, type, status, title, pinned, is_anonymous",
       ).eq("id", postId).maybeSingle();
       if (pErr || !post) throw pErr ?? new Error("post");
 
-      const prow = post as PostRow;
+      const prow = post as PostRow & { is_anonymous?: boolean };
       const authorId = prow.author_id;
 
       const { data: members } = await sb.from("building_members").select(
@@ -339,13 +356,20 @@ Deno.serve(async (req: Request) => {
         recipientCount: userIds.length,
       });
 
+      const authorLabel =
+        prow.is_anonymous || !authorId
+          ? "דייר אנונימי"
+          : await memberDisplayName(sb, prow.building_id, authorId);
+
+      const postBody = truncate(prow.title, 140);
+
       if (prow.type === "poll") {
         await sendToUsers(
           sb,
           userIds,
           prow.building_id,
-          "סקר חדש בבניין",
-          truncate(prow.title, 140),
+          `פורסם סקר חדש מאת ${authorLabel}`,
+          postBody,
           { url: postUrl(postId, appOrigin), postId },
         );
       } else {
@@ -353,8 +377,8 @@ Deno.serve(async (req: Request) => {
           sb,
           userIds,
           prow.building_id,
-          "פוסט חדש בבניין",
-          truncate(prow.title, 140),
+          `פורסם פוסט חדש מאת ${authorLabel}`,
+          postBody,
           { url: postUrl(postId, appOrigin), postId },
         );
       }
@@ -370,59 +394,49 @@ Deno.serve(async (req: Request) => {
       if (!commentId) throw new Error("comment_id");
 
       const { data: comment, error: cErr } = await sb.from("comments").select(
-        "id, post_id, author_id",
+        "id, post_id, author_id, body",
       ).eq("id", commentId).maybeSingle();
       if (cErr || !comment) throw cErr ?? new Error("comment");
 
+      const commentBodyRaw = typeof comment.body === "string" ? comment.body : "";
+
       const { data: post, error: pErr } = await sb.from("posts").select(
-        "id, building_id, author_id",
+        "id, building_id, author_id, is_anonymous",
       ).eq("id", comment.post_id as string).maybeSingle();
       if (pErr || !post) throw pErr ?? new Error("post");
 
       const postAuthor = post.author_id as string | null;
       const commentAuthor = comment.author_id as string;
+      const postAnon =
+        Boolean((post as { is_anonymous?: boolean }).is_anonymous) ||
+        postAuthor == null;
 
       console.log("[notify-push] comment_insert", {
         postId: comment.post_id,
         postAuthor,
         commentAuthor,
+        postAnon,
         buildingId: post.building_id,
       });
 
-      if (postAuthor && postAuthor === commentAuthor) {
+      if (!postAuthor || postAnon) {
         return new Response(JSON.stringify({ ok: true, skipped: true }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      if (postAuthor) {
-        await sendToUsers(sb, [postAuthor], post.building_id as string, "תגובה חדשה לפוסט שלך", "פתחו לצפייה בהודעות", {
-          url: postUrl(comment.post_id as string, appOrigin),
-          postId: comment.post_id as string,
+      if (postAuthor === commentAuthor) {
+        return new Response(JSON.stringify({ ok: true, skipped: true }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
-      } else {
-        // Anonymous posts do not store author_id — notify other building members (except commenter).
-        const { data: members } = await sb.from("building_members").select(
-          "user_id",
-        ).eq("building_id", post.building_id as string);
-
-        const userIds = (members ?? [])
-          .map((m: { user_id: string }) => m.user_id)
-          .filter((uid: string) => uid !== commentAuthor);
-
-        await sendToUsers(
-          sb,
-          userIds,
-          post.building_id as string,
-          "תגובה חדשה בפוסט אנונימי בבניין",
-          "פתחו לצפייה בהודעות",
-          {
-            url: postUrl(comment.post_id as string, appOrigin),
-            postId: comment.post_id as string,
-          },
-        );
       }
+
+      await sendToUsers(sb, [postAuthor], post.building_id as string, "הגיבו לך על הפוסט", truncate(commentBodyRaw, 280), {
+        url: postUrl(comment.post_id as string, appOrigin),
+        postId: comment.post_id as string,
+      });
 
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
@@ -478,7 +492,7 @@ Deno.serve(async (req: Request) => {
           sb,
           userIds,
           newRow.building_id,
-          "הודעה חשובה נעוצה",
+          "ועד הבית נעץ פוסט חדש",
           truncate(newRow.title, 140),
           { url: postUrl(newRow.id, appOrigin), postId: newRow.id },
         );
