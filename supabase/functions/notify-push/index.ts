@@ -53,21 +53,59 @@ function postUrl(postId: string, origin: string): string {
   return `${origin.replace(/\/$/, "")}/post/${postId}`;
 }
 
-async function memberDisplayName(
+async function resolveAuthorDisplayName(
   sb: Supabase,
   buildingId: string,
   userId: string | null,
 ): Promise<string> {
   if (!userId) return "דייר אנונימי";
-  const { data, error } = await sb
+
+  const { data: row, error: rowErr } = await sb
     .from("building_members")
     .select("full_name")
     .eq("building_id", buildingId)
     .eq("user_id", userId)
     .maybeSingle();
-  if (error || !data) return "משתמש";
-  const name = typeof data.full_name === "string" ? data.full_name.trim() : "";
-  return name.length > 0 ? name : "משתמש";
+
+  if (!rowErr && row?.full_name) {
+    const n = String(row.full_name).trim();
+    if (n.length > 0) return n;
+  }
+
+  const { data: adminRes, error: adminErr } = await sb.auth.admin.getUserById(
+    userId,
+  );
+
+  if (adminErr) {
+    console.warn("[notify-push] getUserById", userId, adminErr.message);
+  }
+
+  const u = adminRes?.user;
+  if (u) {
+    const meta = u.user_metadata as Record<string, unknown> | undefined;
+    const pick = (keys: string[]) => {
+      for (const k of keys) {
+        const v = meta?.[k];
+        if (typeof v === "string" && v.trim().length > 0) return v.trim();
+      }
+      return "";
+    };
+    const fromMeta = pick([
+      "full_name",
+      "name",
+      "display_name",
+      "preferred_username",
+    ]);
+    if (fromMeta.length > 0) return fromMeta;
+
+    const email = typeof u.email === "string" ? u.email.trim() : "";
+    const at = email.indexOf("@");
+    if (at > 0) {
+      return email.slice(0, at);
+    }
+  }
+
+  return "דייר";
 }
 
 async function removeDeadSubscription(
@@ -359,7 +397,7 @@ Deno.serve(async (req: Request) => {
       const authorLabel =
         prow.is_anonymous || !authorId
           ? "דייר אנונימי"
-          : await memberDisplayName(sb, prow.building_id, authorId);
+          : await resolveAuthorDisplayName(sb, prow.building_id, authorId);
 
       const postBody = truncate(prow.title, 140);
 
