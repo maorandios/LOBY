@@ -44,6 +44,8 @@ function statusHe(status: string): string {
       return "בטיפול";
     case "closed":
       return "נסגר";
+    case "decided":
+      return "הוחלט";
     default:
       return status;
   }
@@ -346,6 +348,21 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+    } else if (evPre === "poll_vote_insert") {
+      const vid = body["vote_id"] as string | undefined;
+      if (!vid) {
+        return new Response(JSON.stringify({ ok: false, error: "vote_id" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: v } = await sb.from("poll_votes").select("user_id").eq("id", vid).maybeSingle();
+      if (!v || v.user_id !== user.id) {
+        return new Response(JSON.stringify({ ok: false, error: "forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     } else {
       return new Response(
         JSON.stringify({ ok: false, error: "invalid_client_event" }),
@@ -482,6 +499,84 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    const POLL_NEW_VOTE_BODY =
+      "לחצו כאן לצפיה בתוצאות הסקר נכון לעכשיו";
+
+    if (ev === "poll_vote_insert") {
+      const voteId = body["vote_id"] as string | undefined;
+      if (!voteId) throw new Error("vote_id");
+
+      const { data: voteRow, error: pvErr } = await sb.from("poll_votes")
+        .select("id, post_id, user_id")
+        .eq("id", voteId)
+        .maybeSingle();
+      if (pvErr || !voteRow) throw pvErr ?? new Error("poll_vote");
+
+      const voterId = voteRow.user_id as string;
+      const postPid = voteRow.post_id as string;
+
+      const { data: postRowVote, error: postVoteErr } = await sb
+        .from("posts").select(
+          "id, building_id, author_id, type",
+        ).eq("id", postPid).maybeSingle();
+      if (postVoteErr || !postRowVote) {
+        throw postVoteErr ?? new Error("post");
+      }
+
+      if (postRowVote.type !== "poll") {
+        return new Response(JSON.stringify({ ok: true, skipped: true }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const pollAuthor = postRowVote.author_id as string | null;
+
+      console.log("[notify-push] poll_vote_insert", {
+        postId: postPid,
+        voterId,
+        pollAuthor,
+        buildingId: postRowVote.building_id,
+      });
+
+      if (!pollAuthor) {
+        return new Response(JSON.stringify({ ok: true, skipped: true }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (pollAuthor === voterId) {
+        return new Response(JSON.stringify({ ok: true, skipped: true }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const voterLabel = await resolveAuthorDisplayName(
+        sb,
+        postRowVote.building_id as string,
+        voterId,
+      );
+
+      await sendToUsers(
+        sb,
+        [pollAuthor],
+        postRowVote.building_id as string,
+        `יש הצבעה חדשה לסקר שלך מ${voterLabel}`,
+        POLL_NEW_VOTE_BODY,
+        {
+          url: postUrl(postPid, appOrigin),
+          postId: postPid,
+        },
+      );
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (ev === "post_update") {
       const newRow = body["new"] as PostRow | undefined;
       const oldRow = body["old"] as PostRow | undefined;
@@ -503,6 +598,24 @@ Deno.serve(async (req: Request) => {
           [newRow.author_id],
           newRow.building_id,
           "עדכון סטטוס לדיווח",
+          `הסטטוס השתנה ל${statusHe(newRow.status)} · ${truncate(newRow.title, 80)}`,
+          {
+            url: postUrl(newRow.id, appOrigin),
+            postId: newRow.id,
+          },
+        );
+      }
+
+      if (
+        newRow.type === "poll" &&
+        oldRow.status !== newRow.status &&
+        newRow.author_id
+      ) {
+        await sendToUsers(
+          sb,
+          [newRow.author_id],
+          newRow.building_id,
+          "עדכון סטטוס לסקר",
           `הסטטוס השתנה ל${statusHe(newRow.status)} · ${truncate(newRow.title, 80)}`,
           {
             url: postUrl(newRow.id, appOrigin),
