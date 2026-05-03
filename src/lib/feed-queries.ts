@@ -887,21 +887,6 @@ export function mergeCommentIntoRecentPreview(
   }
 }
 
-/** Remove a comment from feed card preview; decrements count. */
-export function mergeCommentRemovedFromPreview(
-  post: FeedPost,
-  commentId: string
-): FeedPost {
-  const prev = post.recentComments ?? []
-  const nextPreview = prev.filter((c) => c.id !== commentId)
-  const nextCount = Math.max(0, post.comments - 1)
-  return {
-    ...post,
-    comments: nextCount,
-    recentComments: nextPreview.length > 0 ? nextPreview : undefined,
-  }
-}
-
 export function mergePollVotes(
   post: FeedPost,
   votedOptionId: string

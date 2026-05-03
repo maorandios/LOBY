@@ -2,8 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Heart, HatGlasses, MessageCircle, MessageCircleCheck, MessageCirclePlus, MessagesSquare, Settings, ShieldUser } from 'lucide-react'
 
-import { useAuth } from '@/auth/use-auth'
-import { CommentDeleteChip } from '@/components/feed/comment-delete-chip'
 import { Button } from '@/components/ui/button'
 import { PostAdminSheet } from '@/components/feed/post-admin-sheet'
 import { PollBlock } from '@/components/feed/poll-block'
@@ -25,7 +23,7 @@ import {
 import { AuthorNameWithAdminBadge } from '@/components/feed/author-name-with-admin'
 import { postStatusDisplayText } from '@/components/feed/status-badge'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
-import { deleteComment, insertComment } from '@/lib/feed-queries'
+import { insertComment } from '@/lib/feed-queries'
 import { cn } from '@/lib/utils'
 import { isPollPost, type FeedPost, type PostComment } from '@/types/feed'
 
@@ -54,8 +52,6 @@ type Props = {
   onAdminDelete?: () => void
   /** Feed: after inline «תגובה» composer succeeds, merge count + preview. */
   onCommentPosted?: (postId: string, comment: PostComment) => void
-  /** Feed: after a comment is deleted from preview strip. */
-  onCommentDeleted?: (postId: string, commentId: string) => void
 }
 
 export function PostCard({
@@ -67,11 +63,8 @@ export function PostCard({
   onAdminSuccess,
   onAdminDelete,
   onCommentPosted,
-  onCommentDeleted,
 }: Props) {
   const navigate = useNavigate()
-  const { session } = useAuth()
-  const viewerId = session?.user?.id ?? null
   const { member, isAdmin: currentUserIsCommitteeAdmin } =
     useBuildingMembership()
   const inlineReplyAuthorLabel =
@@ -81,16 +74,12 @@ export function PostCard({
   const [replyBody, setReplyBody] = useState('')
   const [replySending, setReplySending] = useState(false)
   const [replyError, setReplyError] = useState<string | null>(null)
-  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(
-    null
-  )
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null)
   const isPoll = isPollPost(post)
   const isUpdate = post.type === 'עדכון'
   const isReport = post.type === 'דיווח'
   const isRequest = post.type === 'בקשה'
   const compactCommentFooter = isUpdate || isReport || isPoll || isRequest
-  const committeeAdmin = isAdmin ?? currentUserIsCommitteeAdmin
   const [liked, setLiked] = useState(false)
   const pinned = post.pinned
   const isDetail = variant === 'detail'
@@ -138,17 +127,6 @@ export function PostCard({
       }
     } finally {
       setReplySending(false)
-    }
-  }
-
-  async function handleDeletePreviewComment(commentId: string) {
-    if (deletingCommentId || isDetail) return
-    setDeletingCommentId(commentId)
-    try {
-      const res = await deleteComment(commentId)
-      if (res.ok) onCommentDeleted?.(post.id, commentId)
-    } finally {
-      setDeletingCommentId(null)
     }
   }
 
@@ -541,53 +519,38 @@ export function PostCard({
             תגובות אחרונות
           </h3>
           <ul className="flex flex-col gap-4">
-            {post.recentComments.map((c) => {
-              const canDelete =
-                Boolean(viewerId) &&
-                (committeeAdmin || c.authorId === viewerId)
-              return (
-                <li key={c.id}>
-                  <div className="flex flex-wrap items-baseline justify-start gap-x-1 text-start text-[0.72rem] leading-snug">
-                    {c.authorIsAdmin ? (
-                      <ShieldUser
-                        className="inline-block size-[0.744rem] shrink-0 translate-y-[0.05em]"
-                        style={{ color: POST_CREATE_BUTTON_HEX }}
-                        strokeWidth={2}
-                        aria-hidden
-                      />
-                    ) : (
-                      <ResidentMetaUserIcon className="size-[0.744rem] translate-y-[0.05em]" />
-                    )}
-                    <span className="font-semibold text-foreground">
-                      {c.author}
-                    </span>
-                    <span aria-hidden className="text-muted-foreground/80">
-                      ·
-                    </span>
-                    <span className="tabular-nums text-muted-foreground">
-                      {c.relativeTime}
-                    </span>
-                  </div>
-                  <p
-                    className="mt-1 min-w-0 text-start text-[0.8rem] leading-normal text-foreground line-clamp-1"
-                    dir="rtl"
-                    title={normalizeCommentSnippetLine(c.text)}
-                  >
-                    {normalizeCommentSnippetLine(c.text)}
-                  </p>
-                  {canDelete ? (
-                    <div className="mt-1.5 flex justify-start">
-                      <CommentDeleteChip
-                        disabled={deletingCommentId !== null}
-                        onClick={() =>
-                          void handleDeletePreviewComment(c.id)
-                        }
-                      />
-                    </div>
-                  ) : null}
-                </li>
-              )
-            })}
+            {post.recentComments.map((c) => (
+              <li key={c.id}>
+                <div className="flex flex-wrap items-baseline justify-start gap-x-1 text-start text-[0.72rem] leading-snug">
+                  {c.authorIsAdmin ? (
+                    <ShieldUser
+                      className="inline-block size-[0.744rem] shrink-0 translate-y-[0.05em]"
+                      style={{ color: POST_CREATE_BUTTON_HEX }}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                  ) : (
+                    <ResidentMetaUserIcon className="size-[0.744rem] translate-y-[0.05em]" />
+                  )}
+                  <span className="font-semibold text-foreground">
+                    {c.author}
+                  </span>
+                  <span aria-hidden className="text-muted-foreground/80">
+                    ·
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {c.relativeTime}
+                  </span>
+                </div>
+                <p
+                  className="mt-1 min-w-0 text-start text-[0.8rem] leading-normal text-foreground line-clamp-1"
+                  dir="rtl"
+                  title={normalizeCommentSnippetLine(c.text)}
+                >
+                  {normalizeCommentSnippetLine(c.text)}
+                </p>
+              </li>
+            ))}
           </ul>
         </section>
       ) : null}

@@ -6,9 +6,11 @@ import { cn } from '@/lib/utils'
 type Props = {
   disabled?: boolean
   onClick: () => void
+  /** Tighter pill in the comment meta row (next to the timestamp). */
+  compact?: boolean
 }
 
-export function CommentDeleteChip({ disabled, onClick }: Props) {
+export function CommentDeleteChip({ disabled, onClick, compact }: Props) {
   return (
     <button
       type="button"
@@ -20,12 +22,16 @@ export function CommentDeleteChip({ disabled, onClick }: Props) {
       className={cn(
         COMMENT_GRAY_CHIP_BASE,
         'shrink-0 touch-manipulation',
+        compact && 'py-[3px] text-[0.55rem]',
         disabled && 'pointer-events-none opacity-60'
       )}
       aria-label="מחיקת תגובה"
     >
       <CircleX
-        className="size-[0.744rem] shrink-0 opacity-90"
+        className={cn(
+          'shrink-0 opacity-90',
+          compact ? 'size-[0.65rem]' : 'size-[0.744rem]'
+        )}
         strokeWidth={1.75}
         aria-hidden
       />

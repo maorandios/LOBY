@@ -23,7 +23,6 @@ import {
   fetchFeedPostsForBuilding,
   insertPollVote,
   mergeCommentIntoRecentPreview,
-  mergeCommentRemovedFromPreview,
   mergePollVoteChange,
   mergePollVotes,
   updatePollVote,
@@ -276,19 +275,6 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
     []
   )
 
-  const afterCommentDeleted = useCallback(
-    (postId: string, commentId: string) => {
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === postId
-            ? mergeCommentRemovedFromPreview(p, commentId)
-            : p
-        )
-      )
-    },
-    []
-  )
-
   const showSentinelFooter =
     (filtered.length > 0 && hasMore) || needMoreForDisplay
 
@@ -514,7 +500,6 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
                         isAdmin={isAdmin}
                         onAdminSuccess={() => void loadFeed({ silent: true })}
                         onCommentPosted={afterInlineComment}
-                        onCommentDeleted={afterCommentDeleted}
                       />
                     </li>
                   ))}

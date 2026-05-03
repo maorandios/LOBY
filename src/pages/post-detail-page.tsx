@@ -272,7 +272,7 @@ export function PostDetailPage() {
                         (isAdmin || c.authorId === viewerId)
                       return (
                         <li key={c.id}>
-                          <div className="flex flex-wrap items-baseline justify-start gap-x-1 text-start text-[0.72rem] leading-snug">
+                          <div className="flex flex-wrap items-center justify-start gap-x-1 text-start text-[0.72rem] leading-snug">
                             {c.authorIsAdmin ? (
                               <ShieldUser
                                 className="inline-block size-[0.744rem] shrink-0 translate-y-[0.05em]"
@@ -292,6 +292,23 @@ export function PostDetailPage() {
                             >
                               ·
                             </span>
+                            {canDelete ? (
+                              <>
+                                <CommentDeleteChip
+                                  compact
+                                  disabled={deletingCommentId !== null}
+                                  onClick={() =>
+                                    void handleDeleteComment(c.id)
+                                  }
+                                />
+                                <span
+                                  aria-hidden
+                                  className="text-muted-foreground/80"
+                                >
+                                  ·
+                                </span>
+                              </>
+                            ) : null}
                             <span className="tabular-nums text-muted-foreground">
                               {c.relativeTime}
                             </span>
@@ -302,16 +319,6 @@ export function PostDetailPage() {
                           >
                             {c.text}
                           </p>
-                          {canDelete ? (
-                            <div className="mt-1.5 flex justify-start">
-                              <CommentDeleteChip
-                                disabled={deletingCommentId !== null}
-                                onClick={() =>
-                                  void handleDeleteComment(c.id)
-                                }
-                              />
-                            </div>
-                          ) : null}
                         </li>
                       )
                     })
