@@ -292,8 +292,17 @@ export function PostDetailPage() {
                             >
                               ·
                             </span>
+                            <span className="tabular-nums text-muted-foreground">
+                              {c.relativeTime}
+                            </span>
                             {canDelete ? (
                               <>
+                                <span
+                                  aria-hidden
+                                  className="text-muted-foreground/80"
+                                >
+                                  ·
+                                </span>
                                 <CommentDeleteChip
                                   compact
                                   disabled={deletingCommentId !== null}
@@ -301,17 +310,8 @@ export function PostDetailPage() {
                                     void handleDeleteComment(c.id)
                                   }
                                 />
-                                <span
-                                  aria-hidden
-                                  className="text-muted-foreground/80"
-                                >
-                                  ·
-                                </span>
                               </>
                             ) : null}
-                            <span className="tabular-nums text-muted-foreground">
-                              {c.relativeTime}
-                            </span>
                           </div>
                           <p
                             className="mt-1 min-w-0 text-start text-[0.8rem] leading-normal text-foreground whitespace-pre-wrap break-words"
