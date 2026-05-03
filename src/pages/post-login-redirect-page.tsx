@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom'
 
 import { useBuildingMembership } from '@/hooks/use-building-membership'
+import { pathWithOptionalInstallGuide } from '@/lib/pwa-install-guide'
 
 import { OnboardingLoadingPage } from './onboarding-loading-page'
 
@@ -15,8 +16,10 @@ export function PostLoginRedirectPage() {
   }
 
   if (hasBuilding) {
-    return <Navigate to="/feed" replace />
+    return <Navigate to={pathWithOptionalInstallGuide('/feed')} replace />
   }
 
-  return <Navigate to="/onboarding/admin" replace />
+  return (
+    <Navigate to={pathWithOptionalInstallGuide('/onboarding/admin')} replace />
+  )
 }

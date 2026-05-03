@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import type { InviteBuildingRow } from '@/types/building'
 import { cn } from '@/lib/utils'
+import { pathWithOptionalInstallGuide } from '@/lib/pwa-install-guide'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { tryEnablePushNotificationsAfterJoin } from '@/lib/web-push'
 
@@ -288,7 +289,7 @@ function JoinBuildingPageInner({ code }: { code: string }) {
 
       await refetch()
       await tryEnablePushNotificationsAfterJoin(building.building_id)
-      navigate('/feed', { replace: true })
+      navigate(pathWithOptionalInstallGuide('/feed'), { replace: true })
     } finally {
       setSubmitting(false)
     }

@@ -10,3 +10,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+/** Chromium PWA install prompt (not in all lib.dom builds). */
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[]
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}

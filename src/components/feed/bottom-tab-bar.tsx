@@ -3,7 +3,7 @@ import {
   Rss,
   type LucideIcon,
 } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 
 import { CreatePostSheet } from '@/components/feed/create-post-sheet'
 import { postTypeLucideIcon, POST_CREATE_BUTTON_HEX } from '@/components/feed/post-type-styles'
@@ -79,7 +79,16 @@ function NavTab({ to, label, icon: Icon, end }: NavItem) {
   )
 }
 
-export function BottomTabBar() {
+export function BottomTabBar({
+  showMobileInstallBanner = false,
+}: {
+  /** Mobile browser only: strip below tabs prompting PWA install (safe area on this strip). */
+  showMobileInstallBanner?: boolean
+}) {
+  const location = useLocation()
+  const nextParam = `${location.pathname}${location.search}`
+  const installHref = `/install?next=${encodeURIComponent(nextParam === '/install' ? '/feed' : nextParam)}`
+
   const { open: createOpen, setOpen: setCreateOpen } = useCreatePostComposer()
 
   return (
@@ -127,7 +136,9 @@ export function BottomTabBar() {
         <nav
           className={cn(
             'w-full border-t border-zinc-200/70 bg-feed-canvas backdrop-blur-xl supports-[backdrop-filter]:bg-feed-canvas/90 dark:border-white/10',
-            'pb-[env(safe-area-inset-bottom,0px)]',
+            showMobileInstallBanner
+              ? 'pb-0'
+              : 'pb-[env(safe-area-inset-bottom,0px)]',
             createOpen ? 'pointer-events-none' : 'pointer-events-auto'
           )}
           aria-label="ניווט ראשי"
@@ -139,6 +150,19 @@ export function BottomTabBar() {
             ))}
           </div>
         </nav>
+
+        {showMobileInstallBanner ? (
+          <NavLink
+            to={installHref}
+            className={cn(
+              'block w-full border-t border-zinc-200/70 bg-feed-canvas px-3 py-2.5 text-center text-sm leading-snug text-muted-foreground',
+              'pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] active:bg-zinc-200/50 dark:border-white/10 dark:active:bg-zinc-700/35',
+              createOpen && 'pointer-events-none'
+            )}
+          >
+            לחווית שימוש מושלמת, התקינו את האפליקציה במכשיר
+          </NavLink>
+        ) : null}
       </div>
 
       <CreatePostSheet open={createOpen} onOpenChange={setCreateOpen} />

@@ -6,6 +6,11 @@ import { BottomTabBar } from '@/components/feed/bottom-tab-bar'
 import { CreatePostComposerProvider } from '@/context/create-post-composer-context'
 import { FeedRefreshProvider } from '@/context/feed-refresh-context'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
+import { feedShowsBottomTabBar } from '@/lib/feed-tab-bar-routes'
+import {
+  isMobileForInstallGuide,
+  isStandalonePwa,
+} from '@/lib/pwa-install-guide'
 import { cn } from '@/lib/utils'
 
 import { OnboardingLoadingPage } from '@/pages/onboarding-loading-page'
@@ -16,12 +21,12 @@ export function BuildingRequiredLayout() {
   const everHadBuildingRef = useRef(hasBuilding)
   if (hasBuilding) everHadBuildingRef.current = true
   const location = useLocation()
-  const hideFeedChrome =
-    (location.pathname.startsWith('/post/') &&
-      /^\/post\/[^/]+$/.test(location.pathname)) ||
-    location.pathname === '/profile' ||
-    location.pathname === '/building' ||
-    location.pathname.startsWith('/building/')
+  const hideFeedChrome = !feedShowsBottomTabBar(location.pathname)
+  const showMobileInstallBanner =
+    feedShowsBottomTabBar(location.pathname) &&
+    isMobileForInstallGuide() &&
+    !isStandalonePwa() &&
+    location.pathname !== '/install'
   const navType = useNavigationType()
   const prevPathKey = useRef<string | null>(null)
   const pathKey = `${location.pathname}${location.search}`
@@ -34,6 +39,16 @@ export function BuildingRequiredLayout() {
   useLayoutEffect(() => {
     prevPathKey.current = pathKey
   }, [pathKey])
+
+  useLayoutEffect(() => {
+    document.documentElement.style.setProperty(
+      '--feed-dock-install-banner',
+      showMobileInstallBanner ? '3.5rem' : '0px'
+    )
+    return () => {
+      document.documentElement.style.removeProperty('--feed-dock-install-banner')
+    }
+  }, [showMobileInstallBanner])
 
   /**
    * Only show the loading page on the first-ever resolution. Once we know the
@@ -59,7 +74,9 @@ export function BuildingRequiredLayout() {
           >
             <Outlet />
           </div>
-          {hideFeedChrome ? null : <BottomTabBar />}
+          {hideFeedChrome ? null : (
+            <BottomTabBar showMobileInstallBanner={showMobileInstallBanner} />
+          )}
         </div>
       </CreatePostComposerProvider>
     </FeedRefreshProvider>

@@ -9,7 +9,7 @@ type Props = {
 
 export function PlaceholderPage({ title }: Props) {
   return (
-    <div className="min-h-svh bg-feed-canvas pb-[calc(11rem+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top))]">
+    <div className="min-h-svh bg-feed-canvas pb-[calc(11rem+var(--feed-dock-install-banner,0px)+env(safe-area-inset-bottom,0px))] pt-[calc(1rem+env(safe-area-inset-top))]">
       <div className="mx-auto max-w-lg px-4">
         <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

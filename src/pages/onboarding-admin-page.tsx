@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { useBuildingMembership } from '@/hooks/use-building-membership'
 import { cn } from '@/lib/utils'
 import { generateInviteCode } from '@/lib/invite-code'
+import { pathWithOptionalInstallGuide } from '@/lib/pwa-install-guide'
 import { OnboardingLoadingPage } from '@/pages/onboarding-loading-page'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 import { tryEnablePushNotificationsAfterJoin } from '@/lib/web-push'
@@ -174,7 +175,7 @@ export function OnboardingAdminPage() {
 
   useEffect(() => {
     if (!membershipLoading && hasBuilding) {
-      navigate('/feed', { replace: true })
+      navigate(pathWithOptionalInstallGuide('/feed'), { replace: true })
     }
   }, [hasBuilding, membershipLoading, navigate])
 
@@ -315,7 +316,10 @@ export function OnboardingAdminPage() {
 
       await refetch()
       await tryEnablePushNotificationsAfterJoin(building.id as string)
-      navigate('/feed', { replace: true, state: { newInviteCode: code } })
+      navigate(pathWithOptionalInstallGuide('/feed'), {
+        replace: true,
+        state: { newInviteCode: code },
+      })
     } finally {
       setSubmitting(false)
     }

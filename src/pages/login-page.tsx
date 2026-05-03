@@ -14,6 +14,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AuthScreenShell } from '@/components/auth/auth-screen-shell'
 import { LoginFriendsLottie } from '@/components/auth/login-friends-lottie'
 import { Button } from '@/components/ui/button'
+import { pathWithOptionalInstallGuide } from '@/lib/pwa-install-guide'
 import { consumePostAuthRedirect, stashPostAuthRedirect } from '@/lib/post-auth-redirect'
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
 
@@ -278,7 +279,7 @@ export function LoginPage() {
       }
       if (data.session) {
         const dest = consumePostAuthRedirect()
-        navigate(dest, { replace: true })
+        navigate(pathWithOptionalInstallGuide(dest), { replace: true })
       }
     } finally {
       setLoading(false)

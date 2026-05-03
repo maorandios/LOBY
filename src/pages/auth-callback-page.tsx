@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { AuthScreenShell } from '@/components/auth/auth-screen-shell'
 import { Button } from '@/components/ui/button'
+import { pathWithOptionalInstallGuide } from '@/lib/pwa-install-guide'
 import { consumePostAuthRedirect } from '@/lib/post-auth-redirect'
 import { supabase } from '@/lib/supabase'
 
@@ -21,7 +22,7 @@ export function AuthCallbackPage() {
       if (postAuthTarget === null) {
         postAuthTarget = consumePostAuthRedirect()
       }
-      navigate(postAuthTarget, { replace: true })
+      navigate(pathWithOptionalInstallGuide(postAuthTarget), { replace: true })
     }
 
     const {

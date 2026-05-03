@@ -16,6 +16,7 @@ import { BuildingResidentsPage } from '@/pages/building/building-residents-page'
 import { BuildingSettingsPage } from '@/pages/building/building-settings-page'
 import { BuildingStatsPage } from '@/pages/building/building-stats-page'
 import { ProfilePage } from '@/pages/profile-page'
+import { InstallAppPage } from '@/pages/install-app-page'
 import { PostLoginRedirectPage } from '@/pages/post-login-redirect-page'
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/" element={<ProtectedLayout />}>
           <Route index element={<PostLoginRedirectPage />} />
+          <Route path="install" element={<InstallAppPage />} />
           <Route path="join/:inviteCode" element={<JoinBuildingPage />} />
           <Route path="onboarding/admin" element={<OnboardingAdminPage />} />
           <Route element={<BuildingRequiredLayout />}>

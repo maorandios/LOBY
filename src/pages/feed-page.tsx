@@ -341,7 +341,7 @@ export function FeedPage({ mode = 'all' }: FeedPageProps) {
   return (
     <div
       dir="rtl"
-      className="min-h-svh bg-feed-canvas pb-[calc(11rem+env(safe-area-inset-bottom,0px))]"
+      className="min-h-svh bg-feed-canvas pb-[calc(11rem+var(--feed-dock-install-banner,0px)+env(safe-area-inset-bottom,0px))]"
     >
       <div className="bg-feed-canvas pt-[env(safe-area-inset-top)]">
         <FeedHeader
