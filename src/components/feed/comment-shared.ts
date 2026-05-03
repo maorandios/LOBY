@@ -1,3 +1,7 @@
+/** Grayscale pill — match poll «שינוי בחירה» chip surface. */
+export const COMMENT_GRAY_CHIP_BASE =
+  'inline-flex max-w-full items-center gap-[0.21rem] rounded-full px-[0.425rem] py-[5px] text-[0.595rem] font-semibold tracking-tight border border-zinc-300/90 bg-zinc-100/90 text-zinc-700 dark:border-zinc-500 dark:bg-zinc-800/55 dark:text-zinc-200'
+
 /** Max height for autosizing inline / bottom composers. */
 export const COMMENT_COMPOSER_MAX_HEIGHT_PX = 192
 

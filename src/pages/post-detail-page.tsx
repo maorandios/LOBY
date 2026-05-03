@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useNavigate, useParams } from 'react-router-dom'
 import { MessagesSquare, MoveRight, ShieldUser, Trash2 } from 'lucide-react'
 
+import { CommentDeleteChip } from '@/components/feed/comment-delete-chip'
 import {
   COMMENT_COMPOSER_MAX_HEIGHT_PX,
   COMMENT_COMPOSER_TEXTAREA_CLASS,
@@ -14,6 +15,7 @@ import { PostCard } from '@/components/feed/post-card'
 import { POST_CREATE_BUTTON_HEX } from '@/components/feed/post-type-styles'
 import { buttonVariants } from '@/components/ui/button'
 import {
+  deleteComment,
   fetchCommentsForPost,
   fetchPostById,
   insertComment,
@@ -45,6 +47,9 @@ export function PostDetailPage() {
   const [commentBody, setCommentBody] = useState('')
   const [sending, setSending] = useState(false)
   const [authorDeleteOpen, setAuthorDeleteOpen] = useState(false)
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(
+    null
+  )
   const commentTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const reload = useCallback(async () => {
@@ -116,6 +121,22 @@ export function PostDetailPage() {
       }
     } finally {
       setSending(false)
+    }
+  }
+
+  async function handleDeleteComment(commentId: string) {
+    if (deletingCommentId) return
+    setDeletingCommentId(commentId)
+    try {
+      const res = await deleteComment(commentId)
+      if (res.ok) {
+        setComments((prev) => prev.filter((x) => x.id !== commentId))
+        setPost((p) =>
+          p ? { ...p, comments: Math.max(0, p.comments - 1) } : p
+        )
+      }
+    } finally {
+      setDeletingCommentId(null)
     }
   }
 
@@ -245,37 +266,55 @@ export function PostDetailPage() {
                       אין תגובות עדיין
                     </li>
                   ) : (
-                    comments.map((c) => (
-                      <li key={c.id}>
-                        <div className="flex flex-wrap items-baseline justify-start gap-x-1 text-start text-[0.72rem] leading-snug">
-                          {c.authorIsAdmin ? (
-                            <ShieldUser
-                              className="inline-block size-[0.744rem] shrink-0 translate-y-[0.05em]"
-                              style={{ color: POST_CREATE_BUTTON_HEX }}
-                              strokeWidth={2}
+                    comments.map((c) => {
+                      const canDelete =
+                        Boolean(viewerId) &&
+                        (isAdmin || c.authorId === viewerId)
+                      return (
+                        <li key={c.id}>
+                          <div className="flex flex-wrap items-baseline justify-start gap-x-1 text-start text-[0.72rem] leading-snug">
+                            {c.authorIsAdmin ? (
+                              <ShieldUser
+                                className="inline-block size-[0.744rem] shrink-0 translate-y-[0.05em]"
+                                style={{ color: POST_CREATE_BUTTON_HEX }}
+                                strokeWidth={2}
+                                aria-hidden
+                              />
+                            ) : (
+                              <ResidentMetaUserIcon className="size-[0.744rem] translate-y-[0.05em]" />
+                            )}
+                            <span className="font-semibold text-foreground">
+                              {c.author}
+                            </span>
+                            <span
                               aria-hidden
-                            />
-                          ) : (
-                            <ResidentMetaUserIcon className="size-[0.744rem] translate-y-[0.05em]" />
-                          )}
-                          <span className="font-semibold text-foreground">
-                            {c.author}
-                          </span>
-                          <span aria-hidden className="text-muted-foreground/80">
-                            ·
-                          </span>
-                          <span className="tabular-nums text-muted-foreground">
-                            {c.relativeTime}
-                          </span>
-                        </div>
-                        <p
-                          className="mt-1 min-w-0 text-start text-[0.8rem] leading-normal text-foreground whitespace-pre-wrap break-words"
-                          dir="rtl"
-                        >
-                          {c.text}
-                        </p>
-                      </li>
-                    ))
+                              className="text-muted-foreground/80"
+                            >
+                              ·
+                            </span>
+                            <span className="tabular-nums text-muted-foreground">
+                              {c.relativeTime}
+                            </span>
+                          </div>
+                          <p
+                            className="mt-1 min-w-0 text-start text-[0.8rem] leading-normal text-foreground whitespace-pre-wrap break-words"
+                            dir="rtl"
+                          >
+                            {c.text}
+                          </p>
+                          {canDelete ? (
+                            <div className="mt-1.5 flex justify-start">
+                              <CommentDeleteChip
+                                disabled={deletingCommentId !== null}
+                                onClick={() =>
+                                  void handleDeleteComment(c.id)
+                                }
+                              />
+                            </div>
+                          ) : null}
+                        </li>
+                      )
+                    })
                   )}
                 </ul>
               </section>

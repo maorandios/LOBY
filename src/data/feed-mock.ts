@@ -4,11 +4,19 @@ export const BUILDING_NAME = 'קדושי סלוניקי 27, ירושלים'
 
 const c = (
   id: string,
+  authorId: string,
   author: string,
   apartment: string,
   text: string,
   relativeTime: string
-): PostComment => ({ id, author, apartment, text, relativeTime })
+): PostComment => ({
+  id,
+  authorId,
+  author,
+  apartment,
+  text,
+  relativeTime,
+})
 
 export const MOCK_POSTS: FeedPost[] = [
   {
@@ -25,8 +33,22 @@ export const MOCK_POSTS: FeedPost[] = [
     comments: 4,
     views: 38,
     recentComments: [
-      c('c1', 'יוסי', '4', 'גם אצלי השורה הזאת כבויה מדי פעם.', 'לפני 8 דקות'),
-      c('c2', 'מזכירות', '—', 'פותחים קריאה למתחזק — נעדכן.', 'לפני 6 דקות'),
+      c(
+        'c1',
+        '00000000-0000-4000-8000-000000000011',
+        'יוסי',
+        '4',
+        'גם אצלי השורה הזאת כבויה מדי פעם.',
+        'לפני 8 דקות'
+      ),
+      c(
+        'c2',
+        '00000000-0000-4000-8000-000000000012',
+        'מזכירות',
+        '—',
+        'פותחים קריאה למתחזק — נעדכן.',
+        'לפני 6 דקות'
+      ),
     ],
   },
   {
@@ -43,8 +65,22 @@ export const MOCK_POSTS: FeedPost[] = [
     comments: 9,
     views: 112,
     recentComments: [
-      c('c3', 'נועה', '7', 'מעדיפה את גוון הקרם.', 'לפני 40 דקות'),
-      c('c4', 'אבי', '2', 'אפור בהיר נראה נקי יותר לדעתי.', 'לפני 25 דקות'),
+      c(
+        'c3',
+        '00000000-0000-4000-8000-000000000013',
+        'נועה',
+        '7',
+        'מעדיפה את גוון הקרם.',
+        'לפני 40 דקות'
+      ),
+      c(
+        'c4',
+        '00000000-0000-4000-8000-000000000014',
+        'אבי',
+        '2',
+        'אפור בהיר נראה נקי יותר לדעתי.',
+        'לפני 25 דקות'
+      ),
     ],
     poll: {
       isClosed: false,
@@ -72,7 +108,16 @@ export const MOCK_POSTS: FeedPost[] = [
     apartment: '5',
     comments: 2,
     views: 54,
-    recentComments: [c('c5', 'מיכל', '9', 'מגיעים עם סלט!', 'אתמול')],
+    recentComments: [
+      c(
+        'c5',
+        '00000000-0000-4000-8000-000000000015',
+        'מיכל',
+        '9',
+        'מגיעים עם סלט!',
+        'אתמול'
+      ),
+    ],
   },
   {
     id: 'p4',

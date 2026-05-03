@@ -204,6 +204,7 @@ function mapPreviewRowToPostComment(
   const authorId = row.author_id
   return {
     id: row.id,
+    authorId,
     author: displayName(memberMap, authorId),
     apartment: apartmentLabel(memberMap, authorId),
     text: (row.body ?? '').trim(),
@@ -535,6 +536,7 @@ export async function fetchCommentsForPost(
     const authorId = c.author_id as string
     return {
       id: c.id as string,
+      authorId,
       author: displayName(memberMap, authorId),
       apartment: apartmentLabel(memberMap, authorId),
       text: (c.body as string) ?? '',
@@ -583,12 +585,24 @@ export async function insertComment(
   const authorId = data.author_id as string
   return {
     id: data.id as string,
+    authorId,
     author: displayName(memberMap, authorId),
     apartment: apartmentLabel(memberMap, authorId),
     text: (data.body as string) ?? '',
     relativeTime: formatRelativeTimeHe(data.created_at as string),
     authorIsAdmin: memberIsAdmin(memberMap, authorId),
   }
+}
+
+export async function deleteComment(
+  commentId: string
+): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.from('comments').delete().eq('id', commentId)
+  if (error) {
+    console.error('[LOBY] deleteComment', error)
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
 }
 
 export async function insertPollVote(
@@ -869,6 +883,21 @@ export function mergeCommentIntoRecentPreview(
   return {
     ...post,
     comments: post.comments + 1,
+    recentComments: nextPreview.length > 0 ? nextPreview : undefined,
+  }
+}
+
+/** Remove a comment from feed card preview; decrements count. */
+export function mergeCommentRemovedFromPreview(
+  post: FeedPost,
+  commentId: string
+): FeedPost {
+  const prev = post.recentComments ?? []
+  const nextPreview = prev.filter((c) => c.id !== commentId)
+  const nextCount = Math.max(0, post.comments - 1)
+  return {
+    ...post,
+    comments: nextCount,
     recentComments: nextPreview.length > 0 ? nextPreview : undefined,
   }
 }

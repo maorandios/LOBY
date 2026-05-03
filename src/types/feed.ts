@@ -6,6 +6,8 @@ export type FeedFilterId = 'הכל' | 'דיווחים' | 'הצבעות' | 'עד�
 
 export interface PostComment {
   id: string
+  /** auth.users id — delete permission (owner or building admin) */
+  authorId: string
   author: string
   apartment: string
   text: string
