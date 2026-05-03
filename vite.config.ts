@@ -7,21 +7,43 @@ import { defineConfig } from 'vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-/** Absolute social preview URL for OG/Twitter (crawlers require https). Uses VITE_SITE_ORIGIN, or Vercel deployment host. */
+function trimOrigin(v: string) {
+  return v.replace(/\/$/, '')
+}
+
+/** HTTPS origin for OG/Twitter (scrapers need absolute URLs). Override with VITE_SITE_ORIGIN for a custom domain. */
+function resolveSiteOrigin(): string {
+  const explicit = process.env.VITE_SITE_ORIGIN?.trim()
+  if (explicit) return trimOrigin(explicit)
+
+  const netlify =
+    process.env.DEPLOY_PRIME_URL?.trim() ||
+    process.env.URL?.trim() ||
+    process.env.DEPLOY_URL?.trim()
+  if (netlify) return trimOrigin(netlify)
+
+  const cf = process.env.CF_PAGES_URL?.trim()
+  if (cf) return trimOrigin(cf)
+
+  // Prefer current deployment host (correct for preview + production).
+  const vercelHost = process.env.VERCEL_URL?.trim()
+  if (vercelHost) {
+    return vercelHost.startsWith('http') ? trimOrigin(vercelHost) : `https://${vercelHost}`
+  }
+  return ''
+}
+
+/** Absolute social preview URL for OG/Twitter; falls back to root-relative only when origin is unknown (local build). */
 function socialImageUrlPlugin(): Plugin {
-  const placeholder = '__SOCIAL_IMAGE_URL__'
+  const placeholderImage = '__SOCIAL_IMAGE_URL__'
+  const placeholderCanon = '__SOCIAL_CANONICAL_URL__'
   return {
     name: 'social-image-url',
     transformIndexHtml(html) {
-      const trimOrigin = (v: string) => v.replace(/\/$/, '')
-      const fromEnv = process.env.VITE_SITE_ORIGIN?.trim()
-      const vercelHost = process.env.VERCEL_URL?.trim()
-      let origin = fromEnv ? trimOrigin(fromEnv) : ''
-      if (!origin && vercelHost) {
-        origin = vercelHost.startsWith('http') ? trimOrigin(vercelHost) : `https://${vercelHost}`
-      }
+      const origin = resolveSiteOrigin()
+      const canonical = origin ? `${origin}/` : '/'
       const imageUrl = origin ? `${origin}/social.png` : '/social.png'
-      return html.replaceAll(placeholder, imageUrl)
+      return html.replaceAll(placeholderImage, imageUrl).replaceAll(placeholderCanon, canonical)
     },
   }
 }
